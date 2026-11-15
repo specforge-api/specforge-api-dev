@@ -7,6 +7,7 @@ pub mod routes {
     pub mod export;
     pub mod mock;
     pub mod plan;
+    pub mod proxy;
     pub mod run;
 }
 

@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 
 use specforge_core::models::ApiSpec;
-use crate::routes::{docs, export, mock, plan, run};
+use crate::routes::{docs, export, mock, plan, proxy, run};
 
 pub struct AppState {
     pub spec: RwLock<ApiSpec>,
@@ -35,6 +35,8 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         // Dynamic Mock Server Routes
         .route("/mock", get(mock::handle_mock_root).post(mock::handle_mock_root))
         .route("/mock/*path", get(mock::handle_mock_request).post(mock::handle_mock_request))
+        // Transparent Gateway Proxy: forwards all API calls (/api/...) directly to TARGET_URL
+        .fallback(proxy::forward_to_target)
         .layer(cors)
         .with_state(state)
 }
