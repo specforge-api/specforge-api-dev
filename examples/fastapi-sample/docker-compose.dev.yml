@@ -18,3 +18,4 @@ services:
       - ./tests/generated:/output
     depends_on:
       - fastapi-app
+

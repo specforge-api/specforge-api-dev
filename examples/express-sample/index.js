@@ -87,3 +87,4 @@ app.listen(port, () => {
   console.log(`Express API running on http://localhost:${port}`);
   console.log(`OpenAPI Spec available at http://localhost:${port}/openapi.json`);
 });
+

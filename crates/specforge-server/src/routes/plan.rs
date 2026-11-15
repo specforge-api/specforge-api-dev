@@ -22,3 +22,4 @@ pub async fn get_test_plans(State(state): State<Arc<AppState>>) -> impl IntoResp
         "plans": plans,
     }))
 }
+

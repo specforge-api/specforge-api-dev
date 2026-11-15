@@ -8,9 +8,4 @@ license.workspace = true
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
-serde_yaml.workspace = true
-url.workspace = true
-uuid.workspace = true
-regex.workspace = true
-tracing.workspace = true
 thiserror.workspace = true

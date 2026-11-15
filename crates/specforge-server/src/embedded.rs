@@ -12,3 +12,4 @@ impl Asset {
         std::str::from_utf8(file.data.as_ref()).ok().map(|s| s.to_string())
     }
 }
+

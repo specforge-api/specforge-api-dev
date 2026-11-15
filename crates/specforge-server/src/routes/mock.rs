@@ -7,6 +7,10 @@ use std::sync::Arc;
 use specforge_mock::MockGenerator;
 use crate::app::AppState;
 
+pub async fn handle_mock_root(State(state): State<Arc<AppState>>) -> Response {
+    handle_mock_request(State(state), Path(String::new())).await
+}
+
 pub async fn handle_mock_request(
     State(state): State<Arc<AppState>>,
     Path(path): Path<String>,
@@ -45,3 +49,4 @@ pub async fn handle_mock_request(
         ).into_response()
     }
 }
+

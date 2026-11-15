@@ -32,7 +32,8 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/specforge/api/plan", get(plan::get_test_plans))
         .route("/specforge/api/run-tests", post(run::run_all_tests))
         .route("/specforge/api/export", get(export::export_test_suite))
-        // Dynamic Mock Server Wildcard Route
+        // Dynamic Mock Server Routes
+        .route("/mock", get(mock::handle_mock_root).post(mock::handle_mock_root))
         .route("/mock/*path", get(mock::handle_mock_request).post(mock::handle_mock_request))
         .layer(cors)
         .with_state(state)
@@ -42,3 +43,4 @@ async fn serve_raw_spec(axum::extract::State(state): axum::extract::State<Arc<Ap
     let spec = state.spec.read().await;
     axum::response::Json(spec.raw_spec.clone())
 }
+

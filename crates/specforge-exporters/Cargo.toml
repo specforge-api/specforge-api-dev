@@ -9,4 +9,4 @@ license.workspace = true
 specforge-fuzzer = { path = "../specforge-fuzzer" }
 serde.workspace = true
 serde_json.workspace = true
-minijinja.workspace = true
+

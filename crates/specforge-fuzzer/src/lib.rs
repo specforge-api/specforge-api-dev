@@ -91,3 +91,4 @@ mod tests {
         assert!(result.message.contains("CRASH DETECTED"));
     }
 }
+

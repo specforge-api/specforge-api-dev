@@ -46,3 +46,4 @@ impl BooleanFuzzer {
         Value::Bool(true)
     }
 }
+

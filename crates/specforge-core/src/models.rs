@@ -183,3 +183,4 @@ pub struct ApiSpec {
     pub operations: Vec<Operation>,
     pub raw_spec: serde_json::Value,
 }
+

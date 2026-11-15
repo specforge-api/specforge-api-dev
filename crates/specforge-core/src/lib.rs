@@ -92,3 +92,4 @@ mod tests {
         assert_eq!(op.summary.as_deref(), Some("Execute full-text search"));
     }
 }
+

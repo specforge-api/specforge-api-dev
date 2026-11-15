@@ -34,3 +34,4 @@ def create_user(payload: UserCreate) -> UserResponse:
 @app.get("/api/v1/users", response_model=list[UserResponse])
 def list_users() -> list[UserResponse]:
     return _DB
+

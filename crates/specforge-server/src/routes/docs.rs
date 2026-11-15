@@ -2,7 +2,7 @@
 
 use axum::extract::State;
 use axum::response::{Html, IntoResponse, Response};
-use axum::http::{header, StatusCode};
+use axum::http::{header, HeaderValue, StatusCode};
 use std::sync::Arc;
 use crate::app::AppState;
 use crate::embedded::Asset;
@@ -46,10 +46,11 @@ pub async fn serve_studio_docs(State(state): State<Arc<AppState>>) -> Response {
     (
         StatusCode::OK,
         [
-            (header::CONTENT_TYPE, "text/html; charset=utf-8"),
-            (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
-            (header::X_FRAME_OPTIONS, "SAMEORIGIN"),
+            (header::CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8")),
+            (header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff")),
+            (header::X_FRAME_OPTIONS, HeaderValue::from_static("SAMEORIGIN")),
         ],
         Html(rendered),
     ).into_response()
 }
+

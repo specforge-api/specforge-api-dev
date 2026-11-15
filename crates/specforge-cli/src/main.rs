@@ -191,3 +191,4 @@ fn parse_spec_auto(raw: &serde_json::Value) -> Result<ApiSpec, Box<dyn std::erro
     let spec = parser.parse().map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
     Ok(spec)
 }
+

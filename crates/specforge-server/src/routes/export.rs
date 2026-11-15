@@ -1,7 +1,7 @@
 //! Test suite code export endpoint for Jest/Vitest (TypeScript) and Pytest (Python).
 
 use axum::extract::{Query, State};
-use axum::http::{header, StatusCode};
+use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -35,8 +35,8 @@ pub async fn export_test_suite(
             (
                 StatusCode::OK,
                 [
-                    (header::CONTENT_TYPE, "text/typescript; charset=utf-8"),
-                    (header::CONTENT_DISPOSITION, "attachment; filename=\"api_contracts.test.ts\""),
+                    (header::CONTENT_TYPE, HeaderValue::from_static("text/typescript; charset=utf-8")),
+                    (header::CONTENT_DISPOSITION, HeaderValue::from_static("attachment; filename=\"api_contracts.test.ts\"")),
                 ],
                 code,
             ).into_response()
@@ -47,11 +47,12 @@ pub async fn export_test_suite(
             (
                 StatusCode::OK,
                 [
-                    (header::CONTENT_TYPE, "text/x-python; charset=utf-8"),
-                    (header::CONTENT_DISPOSITION, "attachment; filename=\"test_api_contracts.py\""),
+                    (header::CONTENT_TYPE, HeaderValue::from_static("text/x-python; charset=utf-8")),
+                    (header::CONTENT_DISPOSITION, HeaderValue::from_static("attachment; filename=\"test_api_contracts.py\"")),
                 ],
                 code,
             ).into_response()
         }
     }
 }
+

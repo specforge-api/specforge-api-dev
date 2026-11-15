@@ -29,3 +29,4 @@ if [ "$1" = "serve" ]; then
 fi
 
 exec specforge "$@"
+

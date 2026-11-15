@@ -1,7 +1,7 @@
 # -------------------------------------------------------------
-# Stage 1: Rust Builder Environment
+# Stage 1: Rust Builder Environment (Latest Stable Rust)
 # -------------------------------------------------------------
-FROM rust:1.80-alpine AS builder
+FROM rust:alpine AS builder
 
 RUN apk add --no-cache musl-dev gcc git
 
@@ -11,6 +11,9 @@ WORKDIR /usr/src/specforge
 COPY Cargo.toml Cargo.lock* ./
 COPY crates ./crates
 COPY frontend ./frontend
+
+# Run unit tests across all workspace crates
+RUN cargo test --target x86_64-unknown-linux-musl
 
 # Compile release binary with static musl linking
 RUN cargo build --release --target x86_64-unknown-linux-musl
@@ -50,3 +53,4 @@ ENV SPECFORGE_HOST=0.0.0.0 \
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["serve"]
+

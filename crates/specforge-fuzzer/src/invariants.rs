@@ -135,3 +135,4 @@ pub fn build_curl_command(test_case: &TestCase) -> String {
     parts.push(format!("\"http://localhost:8000{}\"", test_case.endpoint));
     parts.join(" ")
 }
+

@@ -34,7 +34,7 @@ impl MockGenerator {
         } else if schema.is_boolean() {
             Value::Bool(true)
         } else if schema.is_array() {
-            let count = schema.min_items.unwrap_or(2).clamp(1, 5);
+            let count = schema.min_items.unwrap_or(2).clamp(1usize, 5usize);
             let mut arr = Vec::new();
             if let Some(ref items_schema) = schema.items {
                 for _ in 0..count {
@@ -79,3 +79,4 @@ impl MockGenerator {
         Value::String("mock_string_value".to_string())
     }
 }
+
