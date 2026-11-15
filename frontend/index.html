@@ -792,12 +792,16 @@
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 9999;
+    }
+    .modal-overlay.active,
+    .modal-overlay[style*="display: flex"] {
+      display: flex !important;
     }
     .modal-box {
       background: var(--card);
@@ -2912,8 +2916,11 @@
       const op = operations[selectedOpIndex];
       if (!op) return;
       const routeCases = testCases.filter(tc => tc.opMethod === op.method.toLowerCase() && tc.opPath === op.path);
-      const tc = routeCases[idx];
-      if (!tc) return;
+      const tc = routeCases[idx] || testCases[idx];
+      if (!tc) {
+        console.warn("[SpecForge] Route test case not found for index:", idx);
+        return;
+      }
       openInspectProbeModal(tc);
     }
 
@@ -3082,88 +3089,115 @@
     }
 
     function inspectTestPayload(idx) {
-      const tc = (window.__activeTestCases && window.__activeTestCases[idx]) || testCases[idx];
-      if (!tc) return;
+      const activeCases = getActiveTestCases();
+      const tc = activeCases[idx] || (window.__activeTestCases && window.__activeTestCases[idx]) || testCases[idx];
+      if (!tc) {
+        console.warn("[SpecForge] Test case not found for inspect index:", idx);
+        return;
+      }
       openInspectProbeModal(tc);
     }
 
     function openInspectProbeModal(tc) {
-      if (!tc) return;
-      const modal = document.getElementById("inspect-probe-modal");
-      if (!modal) return;
+      try {
+        if (!tc) {
+          console.warn("[SpecForge] openInspectProbeModal called with null/undefined test case");
+          return;
+        }
+        const modal = document.getElementById("inspect-probe-modal");
+        if (!modal) {
+          console.error("[SpecForge] #inspect-probe-modal element not found in DOM");
+          return;
+        }
 
-      const method = safeHttpMethod(tc.opMethod || tc.method).toUpperCase();
-      const methodBadge = document.getElementById("inspect-modal-method");
-      if (methodBadge) {
-        methodBadge.textContent = method;
-        methodBadge.className = `badge-method badge-${method.toLowerCase()}`;
+        const method = safeHttpMethod(tc.opMethod || tc.method).toUpperCase();
+        const methodBadge = document.getElementById("inspect-modal-method");
+        if (methodBadge) {
+          methodBadge.textContent = method;
+          methodBadge.className = `badge-method badge-${method.toLowerCase()}`;
+        }
+
+        const endpoint = tc.endpoint || tc.opPath || "";
+        const endpointEl = document.getElementById("inspect-modal-endpoint");
+        if (endpointEl) endpointEl.textContent = endpoint;
+
+        const expectedEl = document.getElementById("inspect-modal-expected");
+        if (expectedEl) {
+          expectedEl.textContent = tc.allowAccepted ? "Expected: 2xx/4xx (No 500)" : `Expected: HTTP ${tc.expected || 422}`;
+        }
+
+        const fieldEl = document.getElementById("inspect-modal-field");
+        if (fieldEl) fieldEl.textContent = tc.field || "[body_root]";
+
+        const catEl = document.getElementById("inspect-modal-category");
+        if (catEl) catEl.textContent = tc.category || tc.mutationCategory || "Boundary Probe";
+
+        const descEl = document.getElementById("inspect-modal-desc");
+        if (descEl) descEl.textContent = tc.desc || tc.description || "";
+
+        // Data sections
+        const payloadSec = document.getElementById("inspect-modal-payload-section");
+        const payloadEl = document.getElementById("inspect-modal-payload");
+        const querySec = document.getElementById("inspect-modal-query-section");
+        const queryEl = document.getElementById("inspect-modal-query");
+
+        const hasBody = tc.payload !== null && tc.payload !== undefined;
+        const hasQuery = Boolean(tc.queryParams && Object.keys(tc.queryParams).length > 0);
+
+        if (payloadSec && payloadEl) {
+          if (hasBody) {
+            payloadSec.style.display = "block";
+            payloadEl.textContent = typeof tc.payload === 'object' ? JSON.stringify(tc.payload, null, 2) : String(tc.payload);
+          } else if (!hasQuery) {
+            payloadSec.style.display = "block";
+            payloadEl.textContent = "// No body payload required for this request (e.g. GET or parameter-only endpoint)";
+          } else {
+            payloadSec.style.display = "none";
+          }
+        }
+
+        if (querySec && queryEl) {
+          if (hasQuery) {
+            querySec.style.display = "block";
+            queryEl.textContent = JSON.stringify(tc.queryParams, null, 2);
+          } else {
+            querySec.style.display = "none";
+          }
+        }
+
+        // Generate reproduction cURL
+        let targetUrl = endpoint;
+        if (hasQuery) {
+          try {
+            const qs = new URLSearchParams();
+            Object.entries(tc.queryParams).forEach(([k, v]) => qs.append(k, String(v)));
+            targetUrl += (targetUrl.includes("?") ? "&" : "?") + qs.toString();
+          } catch (_) {}
+        }
+        const base = window.location.origin || "http://localhost:4000";
+        let curl = `curl -X ${method} "${base}${targetUrl}"`;
+        if (hasBody && !["GET", "HEAD"].includes(method)) {
+          try {
+            const jsonStr = typeof tc.payload === 'object' ? JSON.stringify(tc.payload).replace(/'/g, "'\\''") : String(tc.payload);
+            curl += ` -H "Content-Type: application/json" -d '${jsonStr}'`;
+          } catch (_) {}
+        }
+        const curlEl = document.getElementById("inspect-modal-curl");
+        if (curlEl) curlEl.textContent = curl;
+
+        modal.style.display = "flex";
+        modal.classList.add("active");
+      } catch (err) {
+        console.error("[SpecForge] Error in openInspectProbeModal:", err);
       }
-
-      const endpointEl = document.getElementById("inspect-modal-endpoint");
-      if (endpointEl) endpointEl.textContent = tc.endpoint || tc.opPath;
-
-      const expectedEl = document.getElementById("inspect-modal-expected");
-      if (expectedEl) {
-        expectedEl.textContent = tc.allowAccepted ? "Expected: 2xx/4xx (No 500)" : `Expected: HTTP ${tc.expected}`;
-      }
-
-      const fieldEl = document.getElementById("inspect-modal-field");
-      if (fieldEl) fieldEl.textContent = tc.field || "[body_root]";
-
-      const catEl = document.getElementById("inspect-modal-category");
-      if (catEl) catEl.textContent = tc.category || "Boundary Probe";
-
-      const descEl = document.getElementById("inspect-modal-desc");
-      if (descEl) descEl.textContent = tc.desc || tc.description || "";
-
-      // Data sections
-      const payloadSec = document.getElementById("inspect-modal-payload-section");
-      const payloadEl = document.getElementById("inspect-modal-payload");
-      const querySec = document.getElementById("inspect-modal-query-section");
-      const queryEl = document.getElementById("inspect-modal-query");
-
-      const hasBody = tc.payload !== null && tc.payload !== undefined;
-      const hasQuery = tc.queryParams && Object.keys(tc.queryParams).length > 0;
-
-      if (hasBody) {
-        payloadSec.style.display = "block";
-        payloadEl.textContent = typeof tc.payload === 'object' ? JSON.stringify(tc.payload, null, 2) : String(tc.payload);
-      } else if (!hasQuery) {
-        payloadSec.style.display = "block";
-        payloadEl.textContent = "// No body payload required for this request (e.g. GET or parameter-only endpoint)";
-      } else {
-        payloadSec.style.display = "none";
-      }
-
-      if (hasQuery) {
-        querySec.style.display = "block";
-        queryEl.textContent = JSON.stringify(tc.queryParams, null, 2);
-      } else {
-        querySec.style.display = "none";
-      }
-
-      // Generate reproduction cURL
-      let targetUrl = tc.endpoint;
-      if (hasQuery) {
-        const qs = new URLSearchParams();
-        Object.entries(tc.queryParams).forEach(([k, v]) => qs.append(k, String(v)));
-        targetUrl += (targetUrl.includes("?") ? "&" : "?") + qs.toString();
-      }
-      const base = window.location.origin || "http://localhost:4000";
-      let curl = `curl -X ${method} "${base}${targetUrl}"`;
-      if (hasBody && !["GET", "HEAD"].includes(method)) {
-        const jsonStr = JSON.stringify(tc.payload).replace(/"/g, '\\"');
-        curl += ` -H "Content-Type: application/json" -d "${jsonStr}"`;
-      }
-      const curlEl = document.getElementById("inspect-modal-curl");
-      if (curlEl) curlEl.textContent = curl;
-
-      modal.classList.add("active");
     }
 
     function closeInspectProbeModal() {
       const modal = document.getElementById("inspect-probe-modal");
-      if (modal) modal.classList.remove("active");
+      if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("active");
+      }
     }
 
     function copyInspectPayload() {
@@ -3267,6 +3301,24 @@
       snippetLang = lang;
       updateCodeSnippet();
     }
+
+    // Modal dismiss listeners
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeInspectProbeModal();
+        closePytestModal();
+        closeAddCustomTestModal();
+      }
+    });
+
+    window.addEventListener("click", (e) => {
+      const inspectModal = document.getElementById("inspect-probe-modal");
+      if (e.target === inspectModal) closeInspectProbeModal();
+      const pytestModal = document.getElementById("pytest-modal");
+      if (e.target === pytestModal) closePytestModal();
+      const customModal = document.getElementById("custom-test-modal");
+      if (e.target === customModal) closeAddCustomTestModal();
+    });
   </script>
 </body>
 </html>
