@@ -81,21 +81,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(content) = fetch_res {
                         if let Some(ref prev) = last_content {
                             if *prev != content {
-                                let parsed_val: Option<serde_json::Value> = serde_json::from_str(&content)
-                                    .or_else(|_| serde_yaml::from_str(&content))
-                                    .ok();
+                                let maybe_new_spec: Option<ApiSpec> = {
+                                    let parsed_val: Option<serde_json::Value> = serde_json::from_str(&content)
+                                        .or_else(|_| serde_yaml::from_str(&content))
+                                        .ok();
 
-                                if let Some(raw_val) = parsed_val {
-                                    if let Ok(new_spec) = parse_spec_auto(&raw_val) {
-                                        let op_count = new_spec.operations.len();
-                                        let title = new_spec.title.clone();
-                                        {
-                                            let mut guard = watcher_state.spec.write().await;
-                                            *guard = new_spec;
-                                        }
-                                        watcher_state.version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                                        println!("⚡ \x1b[1;33m[SpecForge Auto-Reload]\x1b[0m Detected schema update! Hot-reloaded \x1b[32m{} operations\x1b[0m for: \x1b[1m{}\x1b[0m", op_count, title);
+                                    parsed_val.and_then(|raw_val| parse_spec_auto(&raw_val).ok())
+                                };
+
+                                if let Some(new_spec) = maybe_new_spec {
+                                    let op_count = new_spec.operations.len();
+                                    let title = new_spec.title.clone();
+                                    {
+                                        let mut guard = watcher_state.spec.write().await;
+                                        *guard = new_spec;
                                     }
+                                    watcher_state.version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                                    println!("⚡ \x1b[1;33m[SpecForge Auto-Reload]\x1b[0m Detected schema update! Hot-reloaded \x1b[32m{} operations\x1b[0m for: \x1b[1m{}\x1b[0m", op_count, title);
                                 }
                             }
                         }
@@ -214,7 +216,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn load_spec(target: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+async fn load_spec(target: &str) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
     let content = if target.starts_with("http://") || target.starts_with("https://") {
         reqwest::get(target).await?.text().await?
     } else {
@@ -229,7 +231,7 @@ async fn load_spec(target: &str) -> Result<serde_json::Value, Box<dyn std::error
     }
 }
 
-fn parse_spec_auto(raw: &serde_json::Value) -> Result<ApiSpec, Box<dyn std::error::Error>> {
+fn parse_spec_auto(raw: &serde_json::Value) -> Result<ApiSpec, Box<dyn std::error::Error + Send + Sync>> {
     // Check if it's an OpenAI tools definition array
     if raw.is_array() || raw.get("tools").is_some() || raw.get("functions").is_some() {
         if let Ok(spec) = OpenAiToolParser::parse(raw) {
