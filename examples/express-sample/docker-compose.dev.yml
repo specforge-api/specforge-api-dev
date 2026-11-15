@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  # The Express API (Zero SpecForge code!)
+  express-api:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    environment:
+      - PORT=3000
+
+  # SpecForge Dev Companion (Rust Engine)
+  specforge:
+    image: specforge/dev:latest
+    ports:
+      - "4000:4000"   # Studio UI & Mock Server
+    environment:
+      - SPEC_SOURCE=http://express-api:3000/openapi.json
+      - TARGET_URL=http://express-api:3000
+      - EXPORT_TARGET=jest
+      - FAIL_ON_500=true
+    volumes:
+      - ./tests/generated:/output
+    depends_on:
+      - express-api

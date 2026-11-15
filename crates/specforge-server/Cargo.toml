@@ -1,0 +1,21 @@
+[package]
+name = "specforge-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+specforge-core = { path = "../specforge-core" }
+specforge-fuzzer = { path = "../specforge-fuzzer" }
+specforge-mock = { path = "../specforge-mock" }
+specforge-exporters = { path = "../specforge-exporters" }
+tokio.workspace = true
+axum.workspace = true
+tower-http.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rust-embed.workspace = true
+tracing.workspace = true
+uuid.workspace = true

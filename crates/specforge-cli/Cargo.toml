@@ -1,0 +1,24 @@
+[package]
+name = "specforge-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "specforge"
+path = "src/main.rs"
+
+[dependencies]
+specforge-core = { path = "../specforge-core" }
+specforge-fuzzer = { path = "../specforge-fuzzer" }
+specforge-server = { path = "../specforge-server" }
+specforge-exporters = { path = "../specforge-exporters" }
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+reqwest.workspace = true

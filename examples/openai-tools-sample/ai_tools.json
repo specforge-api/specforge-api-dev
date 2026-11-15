@@ -1,0 +1,61 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "book_flight",
+      "description": "Reserve a commercial flight ticket for passengers",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "3-letter airport code (e.g. SFO)"
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "3-letter airport code (e.g. JFK)"
+          },
+          "passengers": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9,
+            "description": "Number of passengers travelling"
+          },
+          "seat_class": {
+            "type": "string",
+            "enum": ["economy", "business", "first"],
+            "description": "Travel cabin class"
+          }
+        },
+        "required": ["origin", "destination", "passengers"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cancel_booking",
+      "description": "Cancel an existing airline booking reference",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "booking_reference": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "description": "6-character PNR code"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for cancellation"
+          }
+        },
+        "required": ["booking_reference"]
+      }
+    }
+  }
+]

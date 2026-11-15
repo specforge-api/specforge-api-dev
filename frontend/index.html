@@ -1,0 +1,3109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpecForge | Interactive API Studio & Contract Fuzzer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- __SPECFORGE_CONFIG_INJECTION__ -->
+  <style>
+    /* Theme 1 - Indigo Slate Light (Default) */
+    :root, [data-theme="theme-1"] {
+      /* Brand & buttons */
+      --primary: #6366F1;
+      --primary-hover: #4F46E5;
+      --primary-active: #4338CA;
+      --primary-foreground: #FFFFFF;
+
+      /* Page & surfaces */
+      --background: #F8FAFC;
+      --foreground: #1E293B;
+      --card: #FFFFFF;
+      --card-foreground: #1E293B;
+      --popover: #FFFFFF;
+      --popover-foreground: #1E293B;
+
+      /* Secondary & muted */
+      --secondary: #F1F5F9;
+      --secondary-hover: #E2E8F0;
+      --secondary-foreground: #334155;
+      --muted: #F1F5F9;
+      --muted-foreground: #64748B;
+      --accent: #EEF2FF;
+      --accent-foreground: #4338CA;
+
+      /* Borders & inputs */
+      --border: #E2E8F0;
+      --input: #CBD5E1;
+      --ring: #818CF8;
+
+      /* Sidebar */
+      --sidebar: #FFFFFF;
+      --sidebar-foreground: #334155;
+      --sidebar-hover: #F8FAFC;
+      --sidebar-active: #EEF2FF;
+      --sidebar-active-foreground: #4338CA;
+
+      /* Code & links */
+      --link: #4F46E5;
+      --code-background: #F1F5F9;
+      --code-foreground: #3730A3;
+
+      /* Status */
+      --success: #16A34A;
+      --success-background: #F0FDF4;
+      --warning: #D97706;
+      --warning-background: #FFFBEB;
+      --destructive: #DC2626;
+      --destructive-background: #FEF2F2;
+      --info: #0284C7;
+      --info-background: #F0F9FF;
+
+      /* Effects */
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+
+      /* Aliases for SpecForge layout */
+      --bg-base: var(--background);
+      --bg-surface: var(--card);
+      --bg-card: var(--secondary);
+      --bg-input: var(--code-background);
+      --border-focus: var(--ring);
+      --text-main: var(--foreground);
+      --text-muted: var(--muted-foreground);
+      --danger: var(--destructive);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    /* Theme 2 - Emerald Teal Light */
+    [data-theme="theme-2"] {
+      /* Brand & buttons */
+      --primary: #0F9488;
+      --primary-hover: #0D766E;
+      --primary-active: #115E59;
+      --primary-foreground: #FFFFFF;
+
+      /* Page & surfaces */
+      --background: #F7FAFA;
+      --foreground: #24343B;
+      --card: #FFFFFF;
+      --card-foreground: #24343B;
+      --popover: #FFFFFF;
+      --popover-foreground: #24343B;
+
+      /* Secondary & muted */
+      --secondary: #EDF5F4;
+      --secondary-hover: #DCEAE8;
+      --secondary-foreground: #334B4A;
+      --muted: #F0F5F5;
+      --muted-foreground: #647776;
+      --accent: #E0F2F1;
+      --accent-foreground: #115E59;
+
+      /* Borders & inputs */
+      --border: #DCE7E7;
+      --input: #C7D8D7;
+      --ring: #5EEAD4;
+
+      /* Sidebar */
+      --sidebar: #FFFFFF;
+      --sidebar-foreground: #334B4A;
+      --sidebar-hover: #F0F8F7;
+      --sidebar-active: #E0F2F1;
+      --sidebar-active-foreground: #115E59;
+
+      /* Code & links */
+      --link: #0D766E;
+      --code-background: #EDF5F4;
+      --code-foreground: #0E7490;
+
+      /* Status */
+      --success: #15803D;
+      --success-background: #F0FDF4;
+      --warning: #B45309;
+      --warning-background: #FFFBEB;
+      --destructive: #DC2626;
+      --destructive-background: #FEF2F2;
+      --info: #0369A1;
+      --info-background: #F0F9FF;
+
+      /* Effects */
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(36, 52, 59, 0.06);
+
+      --bg-base: var(--background);
+      --bg-surface: var(--card);
+      --bg-card: var(--secondary);
+      --bg-input: var(--code-background);
+      --border-focus: var(--ring);
+      --text-main: var(--foreground);
+      --text-muted: var(--muted-foreground);
+      --danger: var(--destructive);
+    }
+
+    /* Theme 3 - Midnight Dark */
+    .dark, [data-theme="theme-3"], [data-theme="dark"] {
+      /* Brand & buttons */
+      --primary: #38BDF8;
+      --primary-hover: #0EA5E9;
+      --primary-active: #0284C7;
+      --primary-foreground: #082F49;
+
+      /* Page & surfaces */
+      --background: #0F172A;
+      --foreground: #E2E8F0;
+      --card: #1E293B;
+      --card-foreground: #E2E8F0;
+      --popover: #1E293B;
+      --popover-foreground: #E2E8F0;
+
+      /* Secondary & muted */
+      --secondary: #273449;
+      --secondary-hover: #334155;
+      --secondary-foreground: #E2E8F0;
+      --muted: #1E293B;
+      --muted-foreground: #94A3B8;
+      --accent: #164E63;
+      --accent-foreground: #BAE6FD;
+
+      /* Borders & inputs */
+      --border: #334155;
+      --input: #475569;
+      --ring: #38BDF8;
+
+      /* Sidebar */
+      --sidebar: #111C30;
+      --sidebar-foreground: #CBD5E1;
+      --sidebar-hover: #1E293B;
+      --sidebar-active: #164E63;
+      --sidebar-active-foreground: #BAE6FD;
+
+      /* Code & links */
+      --link: #7DD3FC;
+      --code-background: #111C30;
+      --code-foreground: #7DD3FC;
+
+      /* Status */
+      --success: #4ADE80;
+      --success-background: #143526;
+      --warning: #FBBF24;
+      --warning-background: #3A2D14;
+      --destructive: #F87171;
+      --destructive-background: #3B1D25;
+      --info: #38BDF8;
+      --info-background: #142D43;
+
+      /* Effects */
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+
+      --bg-base: var(--background);
+      --bg-surface: var(--card);
+      --bg-card: var(--secondary);
+      --bg-input: var(--code-background);
+      --border-focus: var(--ring);
+      --text-main: var(--foreground);
+      --text-muted: var(--muted-foreground);
+      --danger: var(--destructive);
+    }
+
+    /* Theme 4 - Cobalt Blue Light */
+    [data-theme="theme-4"] {
+      /* Brand & buttons */
+      --primary: #3B82F6;
+      --primary-hover: #2563EB;
+      --primary-active: #1D4ED8;
+      --primary-foreground: #FFFFFF;
+
+      /* Page & surfaces */
+      --background: #F6F8FB;
+      --foreground: #263449;
+      --card: #FFFFFF;
+      --card-foreground: #263449;
+      --popover: #FFFFFF;
+      --popover-foreground: #263449;
+
+      /* Secondary & muted */
+      --secondary: #EEF2F7;
+      --secondary-hover: #E1E7EF;
+      --secondary-foreground: #35445A;
+      --muted: #F0F3F8;
+      --muted-foreground: #66758A;
+      --accent: #E8F0FE;
+      --accent-foreground: #1D4ED8;
+
+      /* Borders & inputs */
+      --border: #E1E7EF;
+      --input: #CBD5E1;
+      --ring: #93C5FD;
+
+      /* Sidebar */
+      --sidebar: #FFFFFF;
+      --sidebar-foreground: #35445A;
+      --sidebar-hover: #F6F8FB;
+      --sidebar-active: #E8F0FE;
+      --sidebar-active-foreground: #1D4ED8;
+
+      /* Code & links */
+      --link: #2563EB;
+      --code-background: #EEF2F7;
+      --code-foreground: #1D4ED8;
+
+      /* Status */
+      --success: #15803D;
+      --success-background: #F0FDF4;
+      --warning: #B45309;
+      --warning-background: #FFFBEB;
+      --destructive: #DC2626;
+      --destructive-background: #FEF2F2;
+      --info: #0369A1;
+      --info-background: #EFF6FF;
+
+      /* Effects */
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(38, 52, 73, 0.06);
+
+      --bg-base: var(--background);
+      --bg-surface: var(--card);
+      --bg-card: var(--secondary);
+      --bg-input: var(--code-background);
+      --border-focus: var(--ring);
+      --text-main: var(--foreground);
+      --text-muted: var(--muted-foreground);
+      --danger: var(--destructive);
+    }
+
+    /* Dropdown Theme Picker Menu */
+    .theme-dropdown-container {
+      position: relative;
+    }
+    .theme-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+      width: 260px;
+      padding: 0.4rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .theme-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: calc(var(--radius) - 3px);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      color: var(--card-foreground);
+    }
+    .theme-menu-item:hover {
+      background: var(--secondary);
+      color: var(--secondary-foreground);
+    }
+    .theme-swatch {
+      width: 1.15rem;
+      height: 1.15rem;
+      border-radius: 9999px;
+      flex-shrink: 0;
+      border: 2px solid var(--card);
+      box-shadow: 0 0 0 1px var(--border);
+    }
+    .theme-check {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--primary);
+      width: 1.2rem;
+      text-align: right;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Header */
+    header {
+      background: var(--sidebar);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.025em;
+    }
+    .brand-icon {
+      width: 2rem;
+      height: 2rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-foreground);
+      font-size: 1.1rem;
+      box-shadow: 0 0 14px var(--ring);
+      transition: all 0.2s ease;
+    }
+    .version-tag {
+      font-size: 0.75rem;
+      background: var(--secondary);
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      color: var(--muted-foreground);
+      border: 1px solid var(--border);
+    }
+    .nav-tabs {
+      display: flex;
+      background: var(--code-background);
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      gap: 0.25rem;
+    }
+    .nav-tab {
+      padding: 0.4rem 1rem;
+      border-radius: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted-foreground);
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-tab:hover { color: var(--foreground); }
+    .nav-tab.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    /* Main Container */
+    .app-body {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 57px);
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    aside {
+      width: 320px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-search {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .search-input {
+      width: 100%;
+      background: var(--code-background);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      color: var(--foreground);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    .endpoint-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+    .endpoint-item {
+      padding: 0.6rem 0.75rem;
+      border-radius: calc(var(--radius) - 4px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+      margin-bottom: 0.25rem;
+      transition: all 0.15s ease;
+      color: var(--sidebar-foreground);
+      border-left: 3px solid transparent;
+    }
+    .endpoint-item:hover {
+      background: var(--sidebar-hover);
+      color: var(--sidebar-foreground);
+    }
+    .endpoint-item.active {
+      background: var(--sidebar-active);
+      color: var(--sidebar-active-foreground);
+      border-left: 3px solid var(--primary);
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+    
+    /* Method Badges */
+    .badge-method {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.2rem 0.45rem;
+      border-radius: 0.25rem;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge-get { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+    .badge-post { background: var(--accent); color: var(--accent-foreground); border: 1px solid var(--border); }
+    .badge-put { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+    .badge-delete { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+    .badge-patch { background: #ECFEFF; color: #0891B2; border: 1px solid #A5F3FC; }
+
+    .dark .badge-get { background: rgba(16, 185, 129, 0.2); color: #34D399; border-color: rgba(16, 185, 129, 0.35); }
+    .dark .badge-post { background: var(--accent); color: var(--accent-foreground); border-color: var(--ring); }
+    .dark .badge-put { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border-color: rgba(245, 158, 11, 0.35); }
+    .dark .badge-delete { background: rgba(244, 63, 94, 0.2); color: #F87171; border-color: rgba(244, 63, 94, 0.35); }
+    .dark .badge-patch { background: rgba(6, 182, 212, 0.2); color: #22D3EE; border-color: rgba(6, 182, 212, 0.35); }
+
+    /* Content Area */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Views */
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+      color: var(--card-foreground);
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--card-foreground);
+    }
+
+    /* Try It Out Panel */
+    .try-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .editor-box {
+      width: 100%;
+      height: 220px;
+      background: var(--code-background);
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 3px);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--code-foreground);
+      padding: 0.75rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .editor-box:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    .btn {
+      padding: 0.55rem 1.25rem;
+      border-radius: calc(var(--radius) - 3px);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      user-select: none;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border-color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+    .btn-primary:active {
+      background: var(--primary-active);
+      border-color: var(--primary-active);
+    }
+    .btn-outline {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--foreground);
+    }
+    .btn-outline:hover {
+      background: var(--secondary);
+      color: var(--secondary-foreground);
+      border-color: var(--input);
+    }
+    .btn-outline:active {
+      background: var(--secondary-hover);
+    }
+    .btn-outline-primary {
+      background: var(--accent);
+      border: 1px solid var(--primary);
+      color: var(--accent-foreground);
+    }
+    .btn-outline-primary:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-foreground);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+    .btn-outline-primary:active {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+    .btn-success {
+      background: var(--success);
+      color: #FFFFFF;
+      border-color: var(--success);
+    }
+
+    /* URL Bar */
+    .url-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--code-background);
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 3px);
+      padding: 0.45rem 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      word-break: break-all;
+    }
+
+    /* Sub Tabs (Params / Headers / Auth / Body) */
+    .sub-tabs {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.85rem;
+    }
+    .sub-tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted-foreground);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s ease;
+      margin-bottom: -1px;
+    }
+    .sub-tab-btn:hover { color: var(--foreground); }
+    .sub-tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .sub-tab-badge {
+      font-size: 0.68rem;
+      background: var(--secondary);
+      padding: 0.12rem 0.45rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      color: var(--muted-foreground);
+      font-weight: 600;
+    }
+    .sub-panel { display: none; }
+    .sub-panel.active { display: block; }
+
+    /* Key-Value Tables (Params & Headers) */
+    .kv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.5rem;
+      font-size: 0.82rem;
+    }
+    .kv-table th {
+      text-align: left;
+      padding: 0.35rem 0.5rem;
+      color: var(--muted-foreground);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    .kv-table td {
+      padding: 0.35rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .kv-input {
+      width: 100%;
+      background: var(--code-background);
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 4px);
+      padding: 0.4rem 0.6rem;
+      color: var(--foreground);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .kv-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.9rem;
+      line-height: 1;
+      transition: all 0.15s ease;
+    }
+    .btn-icon:hover {
+      color: var(--destructive);
+      background: var(--destructive-background);
+    }
+
+    /* Test Dashboard */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .stat-number { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
+    .stat-green { color: var(--success); }
+    .stat-yellow { color: var(--warning); }
+    .stat-red { color: var(--destructive); }
+
+    .test-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .test-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      background: var(--secondary);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted-foreground);
+      font-weight: 600;
+    }
+    .test-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--foreground);
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .pill-pass {
+      background: var(--success-background);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+    .pill-leak {
+      background: var(--warning-background);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+    }
+    .pill-crash {
+      background: var(--destructive-background);
+      color: var(--destructive);
+      border: 1px solid var(--destructive);
+    }
+    .pill-planned {
+      background: var(--secondary);
+      color: var(--muted-foreground);
+      border: 1px solid var(--border);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+      width: 800px;
+      max-width: 90vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--card-foreground);
+    }
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .code-box {
+      background: var(--code-background);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: calc(var(--radius) - 3px);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--code-foreground);
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    /* Collapsible Planned Tests Accordion */
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      padding: 0.25rem 0;
+    }
+    .accordion-header:hover h3 {
+      color: var(--primary);
+    }
+    .accordion-chevron {
+      transition: transform 0.2s ease;
+      font-size: 0.8rem;
+      color: var(--muted-foreground);
+      display: inline-block;
+    }
+    .accordion-chevron.collapsed {
+      transform: rotate(-90deg);
+    }
+    .field-tag {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: var(--accent);
+      color: var(--accent-foreground);
+      border: 1px solid var(--border);
+      padding: 0.18rem 0.5rem;
+      border-radius: calc(var(--radius) - 4px);
+      font-weight: 600;
+      display: inline-block;
+    }
+    .planned-test-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 140px auto;
+      gap: 0.75rem;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 4px);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.82rem;
+      transition: border-color 0.15s ease;
+    }
+    .planned-test-row:hover {
+      border-color: var(--primary);
+    }
+
+    /* Grouped Field Collapsible Cards */
+    .field-group-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+      transition: border-color 0.15s ease;
+    }
+    .field-group-card:hover {
+      border-color: var(--primary);
+    }
+    .field-group-header {
+      padding: 0.65rem 0.95rem;
+      background: var(--secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+      color: var(--secondary-foreground);
+    }
+    .field-group-header:hover {
+      background: var(--secondary-hover);
+    }
+    .field-group-body {
+      padding: 0.65rem 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .field-probe-item {
+      display: grid;
+      grid-template-columns: 1fr 140px auto;
+      gap: 0.75rem;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 4px);
+      padding: 0.6rem 0.85rem;
+      font-size: 0.82rem;
+      transition: border-color 0.15s ease;
+    }
+    .field-probe-item:hover {
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <span id="app-title">SpecForge</span>
+      <span class="version-tag">v0.1.0</span>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-client-btn" onclick="switchTab('client')">
+        📖 API Explorer
+      </button>
+      <button class="nav-tab" id="tab-testing-btn" onclick="switchTab('testing')">
+        🧪 Boundary Test Suite
+      </button>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <!-- Color Theme Selector Dropdown -->
+      <div class="theme-dropdown-container">
+        <button class="btn btn-outline" id="theme-btn" onclick="toggleThemeDropdown(event)" style="font-size: 0.82rem; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;" title="Change Color Theme">
+          <span id="theme-icon">🟣</span>
+          <span id="theme-name-label">Theme 1 (Indigo)</span>
+          <span style="font-size: 0.65rem; color: var(--muted-foreground); margin-left: 0.15rem;">▼</span>
+        </button>
+
+        <div id="theme-menu" class="theme-dropdown-menu" style="display: none;">
+          <div class="theme-menu-item" onclick="selectTheme('theme-1')">
+            <span class="theme-swatch" style="background: #6366F1;"></span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 0.82rem;">Theme 1: Indigo Slate</div>
+              <div style="font-size: 0.72rem; color: var(--muted-foreground);">Indigo & clean slate light</div>
+            </div>
+            <span id="check-theme-1" class="theme-check">✓</span>
+          </div>
+
+          <div class="theme-menu-item" onclick="selectTheme('theme-2')">
+            <span class="theme-swatch" style="background: #0F9488;"></span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 0.82rem;">Theme 2: Emerald Teal</div>
+              <div style="font-size: 0.72rem; color: var(--muted-foreground);">Fresh mint & teal light</div>
+            </div>
+            <span id="check-theme-2" class="theme-check"></span>
+          </div>
+
+          <div class="theme-menu-item" onclick="selectTheme('theme-3')">
+            <span class="theme-swatch" style="background: #38BDF8; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);"></span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 0.82rem;">Theme 3: Midnight Dark</div>
+              <div style="font-size: 0.72rem; color: var(--muted-foreground);">Deep navy slate & sky blue</div>
+            </div>
+            <span id="check-theme-3" class="theme-check"></span>
+          </div>
+
+          <div class="theme-menu-item" onclick="selectTheme('theme-4')">
+            <span class="theme-swatch" style="background: #3B82F6;"></span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 0.82rem;">Theme 4: Cobalt Blue</div>
+              <div style="font-size: 0.72rem; color: var(--muted-foreground);">Modern cobalt & azure light</div>
+            </div>
+            <span id="check-theme-4" class="theme-check"></span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.8rem;" onclick="openPytestModal()">
+        🐍 Export to Pytest
+      </button>
+    </div>
+  </header>
+
+  <!-- Application Body -->
+  <div class="app-body">
+    <!-- Left Navigation Sidebar -->
+    <aside>
+      <div class="sidebar-search">
+        <input type="text" id="search-input" class="search-input" placeholder="Filter endpoints (e.g. POST /users)..." oninput="filterEndpoints()">
+      </div>
+      <div class="endpoint-list" id="endpoint-list">
+        <!-- Rendered via JS -->
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main>
+      <!-- View 1: API Explorer / Client -->
+      <div id="view-client" class="view-panel active">
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+                <span id="active-method-badge" class="badge-method badge-post">POST</span>
+                <h2 id="active-path" style="font-size: 1.25rem; font-weight: 700;">/api/v1/users</h2>
+              </div>
+              <p id="active-summary" style="color: var(--text-muted); font-size: 0.9rem;">Endpoint summary</p>
+            </div>
+            <div>
+              <button class="btn btn-outline-primary" style="font-size: 0.85rem; padding: 0.45rem 0.95rem; display: inline-flex; align-items: center; gap: 0.4rem;" onclick="runBoundaryTestsForCurrentRoute()">
+                🧪 Test Boundaries for this Route
+              </button>
+            </div>
+          </div>
+          
+          <!-- Live Computed URL Preview -->
+          <div class="url-bar">
+            <span id="url-method" class="badge-method badge-post" style="padding: 0.15rem 0.4rem;">POST</span>
+            <span id="resolved-url" style="color: var(--link); flex: 1; font-weight: 500;">http://localhost:8000/api/v1/users</span>
+          </div>
+        </div>
+
+        <div class="try-layout">
+          <!-- Request Builder Card -->
+          <div class="card">
+            <div class="sub-tabs">
+              <button class="sub-tab-btn active" id="subtab-params-btn" onclick="switchSubTab('params')">
+                Params <span id="params-count-badge" class="sub-tab-badge">0</span>
+              </button>
+              <button class="sub-tab-btn" id="subtab-headers-btn" onclick="switchSubTab('headers')">
+                Headers <span id="headers-count-badge" class="sub-tab-badge">1</span>
+              </button>
+              <button class="sub-tab-btn" id="subtab-auth-btn" onclick="switchSubTab('auth')">
+                Auth <span id="auth-status-badge" class="sub-tab-badge">None</span>
+              </button>
+              <button class="sub-tab-btn" id="subtab-body-btn" onclick="switchSubTab('body')">
+                Body
+              </button>
+            </div>
+
+            <!-- Subpanel 1: Params (Path & Query) -->
+            <div id="subpanel-params" class="sub-panel active">
+              <div id="path-params-section" style="margin-bottom: 1rem; display: none;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; letter-spacing: 0.05em;">
+                  Path Variables
+                </div>
+                <table class="kv-table">
+                  <thead><tr><th>Variable</th><th>Value</th></tr></thead>
+                  <tbody id="path-params-table-body"></tbody>
+                </table>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Query Parameters
+                  </span>
+                  <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addQueryParamRow()">
+                    + Add Parameter
+                  </button>
+                </div>
+                <table class="kv-table">
+                  <thead><tr><th style="width: 28px;"></th><th>Key</th><th>Value</th><th style="width: 28px;"></th></tr></thead>
+                  <tbody id="query-params-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Subpanel 2: Headers -->
+            <div id="subpanel-headers" class="sub-panel">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Request Headers
+                </span>
+                <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addHeaderRow()">
+                  + Add Header
+                </button>
+              </div>
+              <table class="kv-table">
+                <thead><tr><th style="width: 28px;"></th><th>Header Name</th><th>Value</th><th style="width: 28px;"></th></tr></thead>
+                <tbody id="headers-table-body"></tbody>
+              </table>
+            </div>
+
+            <!-- Subpanel 3: Auth -->
+            <div id="subpanel-auth" class="sub-panel">
+              <div style="margin-bottom: 0.85rem;">
+                <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Authentication Scheme</label>
+                <select id="auth-type-select" class="kv-input" style="width: 180px;" onchange="onAuthTypeChange()">
+                  <option value="none">No Auth</option>
+                  <option value="bearer">Bearer Token</option>
+                  <option value="apikey">API Key</option>
+                </select>
+              </div>
+
+              <div id="auth-bearer-group" style="display: none; margin-bottom: 0.75rem;">
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Bearer Token</label>
+                <input type="text" id="auth-bearer-token" class="kv-input" placeholder="eyJhbGciOi..." oninput="onAuthTokenInput()">
+                <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">
+                  Automatically adds <code>Authorization: Bearer &lt;token&gt;</code> to headers.
+                </p>
+              </div>
+
+              <div id="auth-apikey-group" style="display: none; margin-bottom: 0.75rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Header Name</label>
+                    <input type="text" id="auth-apikey-name" class="kv-input" value="X-API-Key" oninput="onApiKeyInput()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Key Value</label>
+                    <input type="text" id="auth-apikey-val" class="kv-input" placeholder="secret_..." oninput="onApiKeyInput()">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subpanel 4: Body -->
+            <div id="subpanel-body" class="sub-panel">
+              <div class="card-title" style="margin-bottom: 0.5rem;">
+                <span style="font-size: 0.82rem; font-weight: 600;">Request Body (JSON)</span>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="formatRequestBody()">Prettify JSON</button>
+                  <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="resetRequestBody()">Reset Example</button>
+                </div>
+              </div>
+              <textarea id="request-body-input" class="editor-box" style="height: 180px;" oninput="updateCodeSnippet()"></textarea>
+            </div>
+
+            <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="executeManualRequest()">
+                ▶ Send Request
+              </button>
+            </div>
+          </div>
+
+          <!-- Response Inspector Card -->
+          <div class="card">
+            <div class="card-title">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span>Response</span>
+                <span id="response-status-badge" class="pill pill-pass" style="display:none;">200 OK</span>
+              </div>
+              <div class="sub-tabs" style="margin-bottom: 0; border-bottom: none;">
+                <button class="sub-tab-btn active" id="res-tab-body-btn" style="padding: 0.2rem 0.5rem; font-size: 0.78rem;" onclick="switchResponseTab('body')">Body</button>
+                <button class="sub-tab-btn" id="res-tab-headers-btn" style="padding: 0.2rem 0.5rem; font-size: 0.78rem;" onclick="switchResponseTab('headers')">Headers</button>
+              </div>
+            </div>
+            
+            <div id="res-view-body">
+              <textarea id="response-viewer" class="editor-box" style="height: 220px;" readonly placeholder="Send a request to inspect output..."></textarea>
+            </div>
+            <div id="res-view-headers" style="display: none;">
+              <textarea id="response-headers-viewer" class="editor-box" style="height: 220px;" readonly placeholder="Response headers will appear here..."></textarea>
+            </div>
+
+            <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+              <span id="response-latency">Latency: -- ms</span>
+              <button class="btn btn-outline" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" onclick="copyResponse()">Copy Response</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible Planned Boundary & Contract Tests for this Endpoint -->
+        <div class="card" id="endpoint-tests-accordion">
+          <div class="accordion-header" onclick="toggleEndpointAccordion()">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.1rem;">🧪</span>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--foreground); margin: 0;">
+                Planned Boundary & Contract Tests for this Endpoint
+              </h3>
+              <span id="endpoint-planned-count-badge" class="sub-tab-badge" style="font-size: 0.72rem; padding: 0.15rem 0.5rem; background: var(--accent); color: var(--accent-foreground); border: 1px solid var(--border); font-weight: 600;">
+                0 Tests Planned
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="event.stopPropagation(); openAddCustomTestModal();" title="Add a custom test case for this route">
+                ➕ Add Custom Test
+              </button>
+              <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="event.stopPropagation(); toggleAllFieldGroups();" title="Collapse or expand all field groups">
+                📂 Toggle All Fields
+              </button>
+              <button class="btn btn-outline-primary" style="font-size: 0.75rem; padding: 0.22rem 0.65rem;" onclick="event.stopPropagation(); runBoundaryTestsForCurrentRoute();">
+                ⚡ Run All For This Route
+              </button>
+              <span id="accordion-chevron" class="accordion-chevron collapsed">▼</span>
+            </div>
+          </div>
+
+          <div id="endpoint-tests-body" style="margin-top: 1rem; display: none;">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+              SpecForge synthesizes these edge-case contract probes directly from this endpoint's OpenAPI schema constraints. You can inspect fields and payloads, run individual probes, or execute the full route test:
+            </p>
+            <div id="endpoint-planned-tests-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <!-- Dynamically populated per endpoint -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Snippet Generator -->
+        <div class="card">
+          <div class="card-title">
+            <span>Generated Code Snippet</span>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-outline" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" onclick="setSnippetLang('curl')">cURL</button>
+              <button class="btn btn-outline" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" onclick="setSnippetLang('httpx')">Python (httpx)</button>
+              <button class="btn btn-outline" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" onclick="setSnippetLang('requests')">Python (requests)</button>
+            </div>
+          </div>
+          <pre id="code-snippet-box" class="code-box"></pre>
+        </div>
+      </div>
+
+      <!-- View 2: Automated Boundary & Contract Testing Tab -->
+      <div id="view-testing" class="view-panel">
+        <div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.25rem;">Automated Boundary & Contract Fuzzer</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+              Probes string whitespace, empty values, numerical bounds, and detects unhandled 500 server crashes.
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <label for="test-scope-select" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Scope:</label>
+              <select id="test-scope-select" class="kv-input" style="width: auto; min-width: 250px; font-size: 0.82rem;" onchange="onTestScopeChange()">
+                <option value="all">🌐 All Endpoints</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btn-run-tests" onclick="executeBoundaryTests()">
+              ⚡ Run Selected Scope
+            </button>
+            <button class="btn btn-outline" onclick="openPytestModal()">
+              🐍 Export to Pytest
+            </button>
+          </div>
+        </div>
+
+        <!-- Statistics Badges -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Total Tests Planned</div>
+            <div id="stat-total" class="stat-number">0</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Cleanly Rejected (422/400)</div>
+            <div id="stat-pass" class="stat-number stat-green">0</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Schema Leaks (Accepted 200)</div>
+            <div id="stat-leak" class="stat-number stat-yellow">0</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Server Crashes (HTTP 500)</div>
+            <div id="stat-crash" class="stat-number stat-red">0</div>
+          </div>
+        </div>
+
+        <!-- Test Suite Table -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <table class="test-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Endpoint</th>
+                <th>Target Field</th>
+                <th>Mutation Strategy</th>
+                <th>Expected vs Actual</th>
+                <th>Latency</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="test-table-body">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  Click <strong>Run Selected Scope</strong> to execute edge-case contract tests.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Pytest Code Export Modal -->
+  <div id="pytest-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Generated Pytest Contract Test Suite</h3>
+        <button onclick="closePytestModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Add this file to your <code>tests/test_api_contracts.py</code> to ensure these discovered boundary edge cases become permanent regression guards in CI.
+        </p>
+        <pre id="pytest-code-output" class="code-box"></pre>
+      </div>
+      <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button class="btn btn-outline" onclick="closePytestModal()">Close</button>
+        <button class="btn btn-primary" onclick="copyPytestCode()">Copy Pytest Code</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Field Test Modal -->
+  <div id="custom-test-modal" class="modal-overlay">
+    <div class="modal-box" style="width: 600px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.1rem;">🧪</span>
+          <h3 style="font-size: 1.05rem; font-weight: 700;">Add Custom Field Test</h3>
+        </div>
+        <button onclick="closeAddCustomTestModal()" class="btn-icon" style="font-size: 1.2rem;">✕</button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.9rem;">
+        <!-- Active Route Context Banner -->
+        <div style="display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--secondary); border: 1px solid var(--border); border-radius: calc(var(--radius) - 4px); font-size: 0.8rem;">
+          <span id="custom-modal-route-method" class="badge-method badge-post">POST</span>
+          <span id="custom-modal-route-path" style="font-family: var(--font-mono); font-weight: 600;">/api/v1/users</span>
+        </div>
+
+        <!-- Target Field Selection -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 0.75rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Target Field</label>
+            <select id="custom-field-select" class="kv-input" onchange="onCustomFieldSelectChange()">
+              <!-- Populated dynamically -->
+            </select>
+            <input type="text" id="custom-field-name-input" class="kv-input" placeholder="Type custom field name..." style="margin-top: 0.4rem; display: none;">
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Location</label>
+            <select id="custom-field-location" class="kv-input">
+              <option value="body">Request Body (JSON)</option>
+              <option value="query">Query Parameter</option>
+              <option value="path">Path Variable</option>
+              <option value="header">Request Header</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Category & Expected Status -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 0.75rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Test Category / Strategy</label>
+            <input type="text" id="custom-category-input" class="kv-input" placeholder="e.g. Custom Boundary, Security: SQLi" list="custom-category-suggestions">
+            <datalist id="custom-category-suggestions">
+              <option value="Custom Boundary">
+              <option value="Business Logic: Limit">
+              <option value="Security: SQL Injection">
+              <option value="Security: XSS / Scripting">
+              <option value="Special Characters / Unicode">
+              <option value="Formatting / RegEx">
+              <option value="Temporal / Expiration">
+            </datalist>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Expected Status</label>
+            <select id="custom-expected-status" class="kv-input">
+              <option value="422" selected>422 Unprocessable</option>
+              <option value="400">400 Bad Request</option>
+              <option value="401">401 Unauthorized</option>
+              <option value="403">403 Forbidden</option>
+              <option value="404">404 Not Found</option>
+              <option value="200">200 OK (Allowed)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Description / Rationale (Optional)</label>
+          <input type="text" id="custom-desc-input" class="kv-input" placeholder="e.g. Reject usernames containing SQL wildcards or comments">
+        </div>
+
+        <!-- Value Type & Input -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+            <label style="font-size: 0.78rem; font-weight: 600;">Test Value to Inject</label>
+            <div style="display: flex; gap: 0.5rem; font-size: 0.74rem;">
+              <label style="display: inline-flex; align-items: center; gap: 0.2rem; cursor: pointer;">
+                <input type="radio" name="custom-val-type" value="string" checked onchange="onCustomValTypeChange()"> String
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 0.2rem; cursor: pointer;">
+                <input type="radio" name="custom-val-type" value="number" onchange="onCustomValTypeChange()"> Number
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 0.2rem; cursor: pointer;">
+                <input type="radio" name="custom-val-type" value="boolean" onchange="onCustomValTypeChange()"> Boolean
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 0.2rem; cursor: pointer;">
+                <input type="radio" name="custom-val-type" value="json" onchange="onCustomValTypeChange()"> Raw JSON
+              </label>
+            </div>
+          </div>
+          <textarea id="custom-val-input" class="editor-box" style="height: 100px;" placeholder="Type test probe value (e.g. admin' OR '1'='1 or 9999)..."></textarea>
+          <div id="custom-val-error" style="color: var(--destructive); font-size: 0.74rem; margin-top: 0.25rem; display: none;"></div>
+        </div>
+      </div>
+
+      <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button class="btn btn-outline" onclick="closeAddCustomTestModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCustomFieldTest()">Save Test Case</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Runtime State
+    let activeSpec = null;
+    let operations = [];
+    let selectedOpIndex = 0;
+    let testCases = [];
+    let snippetLang = 'curl';
+
+    // Interactive Parameters & Headers State
+    let pathParams = [];
+    let queryParams = [];
+    let requestHeaders = [];
+    let authConfig = { type: 'none', token: '', headerName: 'X-API-Key', headerVal: '' };
+
+    const config = window.__SPECFORGE_CONFIG__ || {
+      title: "SpecForge API Studio",
+      spec_url: "/openapi.json",
+      enable_tests: true
+    };
+
+    const THEMES = {
+      'theme-1': { label: 'Theme 1 (Indigo)', icon: '🟣' },
+      'theme-2': { label: 'Theme 2 (Teal)', icon: '🟢' },
+      'theme-3': { label: 'Theme 3 (Dark)', icon: '🌌' },
+      'theme-4': { label: 'Theme 4 (Cobalt)', icon: '🔵' }
+    };
+
+    let currentTheme = localStorage.getItem("specforge_theme") || "theme-1";
+    if (currentTheme === "dark") currentTheme = "theme-3";
+    if (currentTheme === "light") currentTheme = "theme-1";
+
+    function selectTheme(themeKey) {
+      if (!THEMES[themeKey]) themeKey = "theme-1";
+      currentTheme = themeKey;
+      document.documentElement.setAttribute("data-theme", themeKey);
+      if (themeKey === "theme-3") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      localStorage.setItem("specforge_theme", themeKey);
+
+      // Update button label and icon
+      const info = THEMES[themeKey];
+      const lbl = document.getElementById("theme-name-label");
+      const icon = document.getElementById("theme-icon");
+      if (lbl) lbl.textContent = info.label;
+      if (icon) icon.textContent = info.icon;
+
+      // Update checkmark indicators
+      for (let i = 1; i <= 4; i++) {
+        const chk = document.getElementById(`check-theme-${i}`);
+        if (chk) chk.textContent = (themeKey === `theme-${i}`) ? '✓' : '';
+      }
+
+      closeThemeDropdown();
+    }
+
+    function toggleThemeDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById("theme-menu");
+      if (menu) {
+        menu.style.display = (menu.style.display === "none" || !menu.style.display) ? "flex" : "none";
+      }
+    }
+
+    function closeThemeDropdown() {
+      const menu = document.getElementById("theme-menu");
+      if (menu) menu.style.display = "none";
+    }
+
+    document.addEventListener("click", () => {
+      closeThemeDropdown();
+    });
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      selectTheme(currentTheme);
+      if (config.title) document.getElementById("app-title").textContent = config.title;
+      await loadSpecification();
+    });
+
+    async function loadSpecification() {
+      try {
+        if (config.embedded_spec) {
+          activeSpec = config.embedded_spec;
+        } else {
+          const res = await fetch(config.spec_url || "/openapi.json");
+          activeSpec = await res.json();
+        }
+        parseOperations();
+        renderEndpointList();
+        await synthesizeTestPlan();
+        selectOperation(0);
+      } catch (err) {
+        console.error("Failed to load OpenAPI spec:", err);
+      }
+    }
+
+    function parseOperations() {
+      operations = [];
+      const paths = activeSpec.paths || {};
+      for (const [path, methods] of Object.entries(paths)) {
+        for (const [method, op] of Object.entries(methods)) {
+          if (!['get', 'post', 'put', 'delete', 'patch'].includes(method.toLowerCase())) continue;
+          operations.push({
+            method: method.toLowerCase(),
+            path: path,
+            summary: op.summary || path,
+            description: op.description || "",
+            raw: op
+          });
+        }
+      }
+    }
+
+    function renderEndpointList() {
+      const container = document.getElementById("endpoint-list");
+      container.innerHTML = "";
+      operations.forEach((op, index) => {
+        const method = safeHttpMethod(op.method);
+        const item = document.createElement("div");
+        item.className = `endpoint-item ${index === selectedOpIndex ? 'active' : ''}`;
+        item.onclick = () => selectOperation(index);
+        item.innerHTML = `
+          <span class="badge-method badge-${method}">${escapeHtml(method)}</span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(op.path)}</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function selectOperation(index) {
+      selectedOpIndex = index;
+      renderEndpointList();
+      const op = operations[index];
+      if (!op) return;
+
+      document.getElementById("active-method-badge").className = `badge-method badge-${op.method}`;
+      document.getElementById("active-method-badge").textContent = op.method.toUpperCase();
+      document.getElementById("active-path").textContent = op.path;
+      document.getElementById("active-summary").textContent = op.summary || op.description || "";
+      document.getElementById("url-method").className = `badge-method badge-${op.method}`;
+      document.getElementById("url-method").textContent = op.method.toUpperCase();
+
+      // 1. Parse Path Parameters from URL pattern {param_name}
+      pathParams = [];
+      const pathParamMatches = op.path.match(/\{([^}]+)\}/g) || [];
+      const rawParams = op.raw?.parameters || [];
+
+      pathParamMatches.forEach(match => {
+        const pName = match.replace(/[{}]/g, '');
+        const declared = rawParams.find(p => p.in === 'path' && p.name === pName);
+        let defaultVal = "usr_101";
+        if (declared && (declared.example || declared.schema?.default)) {
+          defaultVal = declared.example || declared.schema?.default;
+        }
+        pathParams.push({ name: pName, value: defaultVal });
+      });
+
+      // 2. Parse Query Parameters from spec
+      queryParams = [];
+      rawParams.filter(p => p.in === 'query').forEach(p => {
+        let defaultVal = "";
+        if (p.example !== undefined) defaultVal = p.example;
+        else if (p.schema?.default !== undefined) defaultVal = p.schema.default;
+        else if (p.schema?.enum) defaultVal = p.schema.enum[0];
+        else if (p.schema?.type === 'integer' || p.schema?.type === 'number') defaultVal = "10";
+        else if (p.schema?.type === 'string') defaultVal = "active";
+
+        queryParams.push({
+          enabled: true,
+          key: p.name,
+          value: String(defaultVal),
+          description: p.description || ''
+        });
+      });
+
+      // 3. Initialize Headers
+      requestHeaders = [];
+      if (['post', 'put', 'patch'].includes(op.method)) {
+        requestHeaders.push({ enabled: true, key: 'Content-Type', value: 'application/json', isAuth: false });
+      }
+
+      // Add declared header params
+      rawParams.filter(p => p.in === 'header').forEach(p => {
+        const isAuthHeader = p.name.toLowerCase() === 'authorization';
+        requestHeaders.push({
+          enabled: true,
+          key: p.name,
+          value: p.example || p.schema?.default || (isAuthHeader ? 'Bearer secret_token_123' : 'trace_001'),
+          isAuth: isAuthHeader
+        });
+        if (isAuthHeader) {
+          authConfig.type = 'bearer';
+          authConfig.token = 'secret_token_123';
+        }
+      });
+
+      // Render all controls
+      renderPathParamsTable();
+      renderQueryParamsTable();
+      renderHeadersTable();
+      updateAuthUI();
+
+      // Reset Body & active sub-tab
+      resetRequestBody();
+      if (op.method === 'get') {
+        switchSubTab('params');
+      } else {
+        switchSubTab('body');
+      }
+
+      updateResolvedUrl();
+      updateCodeSnippet();
+      renderEndpointPlannedTests();
+    }
+
+    function switchSubTab(subTabName) {
+      document.querySelectorAll(".sub-tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".sub-panel").forEach(p => p.classList.remove("active"));
+      const btn = document.getElementById(`subtab-${subTabName}-btn`);
+      const panel = document.getElementById(`subpanel-${subTabName}`);
+      if (btn) btn.classList.add("active");
+      if (panel) panel.classList.add("active");
+    }
+
+    function switchResponseTab(resTabName) {
+      document.querySelectorAll("#res-tab-body-btn, #res-tab-headers-btn").forEach(b => b.classList.remove("active"));
+      const btn = document.getElementById(`res-tab-${resTabName}-btn`);
+      if (btn) btn.classList.add("active");
+
+      if (resTabName === 'body') {
+        document.getElementById("res-view-body").style.display = "block";
+        document.getElementById("res-view-headers").style.display = "none";
+      } else {
+        document.getElementById("res-view-body").style.display = "none";
+        document.getElementById("res-view-headers").style.display = "block";
+      }
+    }
+
+    function renderPathParamsTable() {
+      const section = document.getElementById("path-params-section");
+      const tbody = document.getElementById("path-params-table-body");
+      tbody.innerHTML = "";
+
+      if (pathParams.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      pathParams.forEach((p, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="width: 140px; font-weight: 600; font-family: var(--font-mono); font-size: 0.82rem; color: var(--primary);">
+            {${escapeHtml(p.name)}}
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(p.value)}" placeholder="Value..." oninput="onPathParamInput(${idx}, this.value)">
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function onPathParamInput(idx, val) {
+      pathParams[idx].value = val;
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    function renderQueryParamsTable() {
+      const tbody = document.getElementById("query-params-table-body");
+      tbody.innerHTML = "";
+      document.getElementById("params-count-badge").textContent = pathParams.length + queryParams.filter(q => q.enabled).length;
+
+      if (queryParams.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted); text-align: center; font-size: 0.8rem; padding: 0.75rem;">No query parameters defined. Click <strong>+ Add Parameter</strong> to add one.</td></tr>`;
+        return;
+      }
+
+      queryParams.forEach((q, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" ${q.enabled ? 'checked' : ''} onchange="toggleQueryParam(${idx})">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(q.key)}" placeholder="Key" oninput="onQueryParamChange(${idx}, 'key', this.value)">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(q.value)}" placeholder="Value" oninput="onQueryParamChange(${idx}, 'value', this.value)">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-icon" onclick="removeQueryParamRow(${idx})" title="Remove">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addQueryParamRow() {
+      queryParams.push({ enabled: true, key: '', value: '', description: '' });
+      renderQueryParamsTable();
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    function removeQueryParamRow(idx) {
+      queryParams.splice(idx, 1);
+      renderQueryParamsTable();
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    function toggleQueryParam(idx) {
+      queryParams[idx].enabled = !queryParams[idx].enabled;
+      document.getElementById("params-count-badge").textContent = pathParams.length + queryParams.filter(q => q.enabled).length;
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    function onQueryParamChange(idx, field, val) {
+      queryParams[idx][field] = val;
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    function renderHeadersTable() {
+      const tbody = document.getElementById("headers-table-body");
+      tbody.innerHTML = "";
+      document.getElementById("headers-count-badge").textContent = requestHeaders.filter(h => h.enabled).length;
+
+      requestHeaders.forEach((h, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" ${h.enabled ? 'checked' : ''} onchange="toggleHeader(${idx})">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(h.key)}" placeholder="Header Name" oninput="onHeaderChange(${idx}, 'key', this.value)">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(h.value)}" placeholder="Value" oninput="onHeaderChange(${idx}, 'value', this.value)">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-icon" onclick="removeHeaderRow(${idx})" title="Remove">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addHeaderRow() {
+      requestHeaders.push({ enabled: true, key: '', value: '', isAuth: false });
+      renderHeadersTable();
+      updateCodeSnippet();
+    }
+
+    function removeHeaderRow(idx) {
+      requestHeaders.splice(idx, 1);
+      renderHeadersTable();
+      updateCodeSnippet();
+    }
+
+    function toggleHeader(idx) {
+      requestHeaders[idx].enabled = !requestHeaders[idx].enabled;
+      document.getElementById("headers-count-badge").textContent = requestHeaders.filter(h => h.enabled).length;
+      updateCodeSnippet();
+    }
+
+    function onHeaderChange(idx, field, val) {
+      requestHeaders[idx][field] = val;
+      updateCodeSnippet();
+    }
+
+    function onAuthTypeChange() {
+      const type = document.getElementById("auth-type-select").value;
+      authConfig.type = type;
+      updateAuthUI();
+      syncAuthHeader();
+    }
+
+    function onAuthTokenInput() {
+      authConfig.token = document.getElementById("auth-bearer-token").value;
+      syncAuthHeader();
+    }
+
+    function onApiKeyInput() {
+      authConfig.headerName = document.getElementById("auth-apikey-name").value || 'X-API-Key';
+      authConfig.headerVal = document.getElementById("auth-apikey-val").value;
+      syncAuthHeader();
+    }
+
+    function updateAuthUI() {
+      document.getElementById("auth-type-select").value = authConfig.type;
+      const bearerGroup = document.getElementById("auth-bearer-group");
+      const apiKeyGroup = document.getElementById("auth-apikey-group");
+      const statusBadge = document.getElementById("auth-status-badge");
+
+      if (authConfig.type === 'bearer') {
+        bearerGroup.style.display = "block";
+        apiKeyGroup.style.display = "none";
+        statusBadge.textContent = "Bearer";
+        document.getElementById("auth-bearer-token").value = authConfig.token;
+      } else if (authConfig.type === 'apikey') {
+        bearerGroup.style.display = "none";
+        apiKeyGroup.style.display = "block";
+        statusBadge.textContent = "API Key";
+        document.getElementById("auth-apikey-name").value = authConfig.headerName;
+        document.getElementById("auth-apikey-val").value = authConfig.headerVal;
+      } else {
+        bearerGroup.style.display = "none";
+        apiKeyGroup.style.display = "none";
+        statusBadge.textContent = "None";
+      }
+    }
+
+    function syncAuthHeader() {
+      // Remove any existing auth headers
+      requestHeaders = requestHeaders.filter(h => !h.isAuth);
+
+      if (authConfig.type === 'bearer' && authConfig.token.trim()) {
+        requestHeaders.unshift({
+          enabled: true,
+          key: 'Authorization',
+          value: `Bearer ${authConfig.token.trim()}`,
+          isAuth: true
+        });
+      } else if (authConfig.type === 'apikey' && authConfig.headerVal.trim()) {
+        requestHeaders.unshift({
+          enabled: true,
+          key: authConfig.headerName.trim(),
+          value: authConfig.headerVal.trim(),
+          isAuth: true
+        });
+      }
+
+      renderHeadersTable();
+      updateCodeSnippet();
+    }
+
+    function getResolvedUrl() {
+      const op = operations[selectedOpIndex];
+      if (!op) return "";
+      let path = op.path;
+
+      // Replace path parameters
+      pathParams.forEach(p => {
+        path = path.replace(`{${p.name}}`, encodeURIComponent(p.value || p.name));
+      });
+
+      // Append query parameters
+      const activeQ = queryParams.filter(q => q.enabled && q.key.trim());
+      if (activeQ.length > 0) {
+        const searchParams = new URLSearchParams();
+        activeQ.forEach(q => searchParams.append(q.key.trim(), q.value));
+        path += '?' + searchParams.toString();
+      }
+
+      return path;
+    }
+
+    function updateResolvedUrl() {
+      const path = getResolvedUrl();
+      const host = window.location.origin || "http://localhost:8000";
+      document.getElementById("resolved-url").textContent = `${host}${path}`;
+    }
+
+    function formatRequestBody() {
+      const box = document.getElementById("request-body-input");
+      try {
+        const parsed = JSON.parse(box.value);
+        box.value = JSON.stringify(parsed, null, 2);
+        updateCodeSnippet();
+      } catch (e) {
+        alert("Invalid JSON: " + e.message);
+      }
+    }
+
+    function resetRequestBody() {
+      const op = operations[selectedOpIndex];
+      const baseline = generateMockFromOp(op);
+      document.getElementById("request-body-input").value = JSON.stringify(baseline, null, 2);
+    }
+
+    function resolveRef(schema, visited = new Set()) {
+      if (!schema || typeof schema !== 'object') return schema;
+      if (schema.$ref && typeof schema.$ref === 'string') {
+        if (visited.has(schema.$ref)) return schema;
+        visited.add(schema.$ref);
+        const refPath = schema.$ref.replace(/^#\//, '').split('/');
+        let target = activeSpec;
+        for (const seg of refPath) {
+          if (!target) break;
+          target = target[seg];
+        }
+        if (target) {
+          const resolvedTarget = resolveRef(target, visited);
+          return { ...resolvedTarget, ...schema, $ref: undefined };
+        }
+      }
+      if (Array.isArray(schema.allOf)) {
+        let merged = {};
+        for (const sub of schema.allOf) {
+          const resolvedSub = resolveRef(sub, visited);
+          merged = {
+            ...merged,
+            ...resolvedSub,
+            properties: { ...(merged.properties || {}), ...(resolvedSub.properties || {}) },
+            required: [...(merged.required || []), ...(resolvedSub.required || [])]
+          };
+        }
+        return { ...merged, ...schema, allOf: undefined };
+      }
+      return schema;
+    }
+
+    function generateMockFromOp(op) {
+      const schema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      if (!schema) return { message: "sample_payload" };
+      return generateMockFromSchema(schema);
+    }
+
+    function generateMockFromSchema(schema) {
+      if (!schema) return "value";
+      schema = resolveRef(schema);
+      if (schema.example !== undefined) return schema.example;
+      if (Array.isArray(schema.examples) && schema.examples.length > 0) return schema.examples[0];
+      if (schema.default !== undefined) return schema.default;
+      if (schema.enum && schema.enum.length > 0) return schema.enum[0];
+      if (schema.type === 'object' || schema.properties) {
+        const obj = {};
+        for (const [k, v] of Object.entries(schema.properties || {})) {
+          obj[k] = generateMockFromSchema(v);
+        }
+        return obj;
+      }
+      if (schema.type === 'string') {
+        if (schema.format === 'email') return "user@example.com";
+        if (schema.format === 'uuid') return "123e4567-e89b-12d3-a456-426614174000";
+        if (schema.format === 'date-time') return new Date().toISOString();
+        if (schema.format === 'date') return "2026-10-28";
+        return "sample_string";
+      }
+      if (schema.type === 'integer' || schema.type === 'number') return schema.minimum !== undefined ? schema.minimum : 25;
+      if (schema.type === 'boolean') return true;
+      if (schema.type === 'array') {
+        if (schema.items) {
+          return [generateMockFromSchema(schema.items)];
+        }
+        return [];
+      }
+      return "value";
+    }
+
+    async function executeManualRequest() {
+      const op = operations[selectedOpIndex];
+      const resolvedPath = getResolvedUrl();
+      const bodyText = document.getElementById("request-body-input").value;
+      const statusBadge = document.getElementById("response-status-badge");
+      const viewer = document.getElementById("response-viewer");
+      const headersViewer = document.getElementById("response-headers-viewer");
+      const latencyLabel = document.getElementById("response-latency");
+
+      // Build Headers Dictionary
+      const headersObj = {};
+      requestHeaders.filter(h => h.enabled && h.key.trim()).forEach(h => {
+        headersObj[h.key.trim()] = h.value;
+      });
+
+      let payload = null;
+      if (['post', 'put', 'patch', 'delete'].includes(op.method) && bodyText.trim()) {
+        try {
+          payload = JSON.parse(bodyText);
+        } catch(e) {
+          alert("Invalid JSON body");
+          return;
+        }
+      }
+
+      const startTime = performance.now();
+      try {
+        const opts = {
+          method: op.method.toUpperCase(),
+          headers: headersObj
+        };
+        if (payload !== null && payload !== undefined) opts.body = JSON.stringify(payload);
+
+        const res = await fetch(resolvedPath, opts);
+        const elapsed = Math.round(performance.now() - startTime);
+        const text = await res.text();
+
+        statusBadge.style.display = "inline-block";
+        statusBadge.textContent = `${res.status} ${res.statusText}`;
+        statusBadge.className = `pill ${res.ok ? 'pill-pass' : (res.status >= 500 ? 'pill-crash' : 'pill-leak')}`;
+        latencyLabel.textContent = `Latency: ${elapsed} ms`;
+
+        try {
+          viewer.value = JSON.stringify(JSON.parse(text), null, 2);
+        } catch {
+          viewer.value = text;
+        }
+
+        // Render response headers
+        let headerStr = "";
+        res.headers.forEach((val, key) => {
+          headerStr += `${key}: ${val}\n`;
+        });
+        headersViewer.value = headerStr || "(No response headers accessible due to CORS or empty)";
+      } catch (err) {
+        viewer.value = `Network or CORS error: ${err.message}`;
+      }
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      if (tab === 'client') {
+        document.getElementById("tab-client-btn").classList.add("active");
+        document.getElementById("view-client").classList.add("active");
+      } else {
+        document.getElementById("tab-testing-btn").classList.add("active");
+        document.getElementById("view-testing").classList.add("active");
+      }
+    }
+
+    // Fuzzing & Testing Generator
+    async function synthesizeTestPlan() {
+      // 1. Try to fetch rich server-synthesized test plan if available
+      try {
+        const res = await fetch("/specforge/api/plan");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.plans && data.plans.length > 0) {
+            testCases = [];
+            data.plans.forEach(plan => {
+              (plan.test_cases || []).forEach(tc => {
+                testCases.push({
+                  opMethod: plan.method.toLowerCase(),
+                  opPath: plan.endpoint,
+                  endpoint: plan.endpoint,
+                  method: plan.method.toUpperCase(),
+                  field: tc.field_name || tc.target_field || "payload",
+                  category: tc.mutation_category || tc.invariant_type || tc.category || "Boundary",
+                  desc: tc.description || tc.mutation_name || tc.name,
+                  payload: tc.payload,
+                  headers: tc.headers || {},
+                  queryParams: tc.query_params || {},
+                  expected: tc.expected_status || 422,
+                  isNegative: tc.is_negative_test !== false,
+                  allowAccepted: Boolean(tc.allow_accepted)
+                });
+              });
+            });
+            mergeCustomProbesFromStorage();
+            populateTestScopeDropdown();
+            renderEndpointPlannedTests();
+            renderPlannedTestTable();
+            return;
+          }
+        }
+      } catch (e) {
+        // Fall back to client-side synthesis
+      }
+
+      testCases = [];
+      operations.forEach(op => {
+        const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+        const schema = resolveRef(rawSchema);
+        const rawParams = op.raw?.parameters || [];
+        const opMethod = op.method.toLowerCase();
+        const opPath = op.path;
+
+        // 1. Request Body Fuzzing
+        if (schema && schema.properties) {
+          const baseline = generateMockFromSchema(schema);
+
+          for (const [propName, rawPropSchema] of Object.entries(schema.properties)) {
+            const propSchema = resolveRef(rawPropSchema);
+            if (propSchema.type === 'string') {
+              testCases.push({
+                opMethod,
+                opPath,
+                endpoint: op.path,
+                method: op.method,
+                field: propName,
+                category: "Whitespace: Multi-Space",
+                desc: `Rejects multi-space whitespace string for '${propName}'`,
+                payload: { ...baseline, [propName]: "     " },
+                expected: 422
+              });
+              testCases.push({
+                opMethod,
+                opPath,
+                endpoint: op.path,
+                method: op.method,
+                field: propName,
+                category: "Boundary: Empty String",
+                desc: `Rejects empty string for '${propName}'`,
+                payload: { ...baseline, [propName]: "" },
+                expected: 422
+              });
+            } else if (propSchema.type === 'integer' || propSchema.type === 'number') {
+              testCases.push({
+                opMethod,
+                opPath,
+                endpoint: op.path,
+                method: op.method,
+                field: propName,
+                category: "Boundary: Negative Number",
+                desc: `Rejects negative number for unsigned '${propName}'`,
+                payload: { ...baseline, [propName]: -1 },
+                expected: 422
+              });
+              testCases.push({
+                opMethod,
+                opPath,
+                endpoint: op.path,
+                method: op.method,
+                field: propName,
+                category: "Type: Float into Integer",
+                desc: `Rejects non-integer float (42.5) for '${propName}'`,
+                payload: { ...baseline, [propName]: 42.5 },
+                expected: 422
+              });
+            }
+          }
+
+          if (schema.required && schema.required.length > 0) {
+            schema.required.forEach(reqKey => {
+              const omitted = { ...baseline };
+              delete omitted[reqKey];
+              testCases.push({
+                opMethod,
+                opPath,
+                endpoint: op.path,
+                method: op.method,
+                field: reqKey,
+                category: "Structure: Omit Required Key",
+                desc: `Rejects missing required field '${reqKey}'`,
+                payload: omitted,
+                expected: 422
+              });
+            });
+          }
+        }
+
+        // 2. Query Parameters Fuzzing
+        rawParams.filter(p => p.in === 'query').forEach(p => {
+          const pName = p.name;
+          if (p.schema?.type === 'string') {
+            testCases.push({
+              opMethod,
+              opPath,
+              endpoint: `${op.path}?${pName}=%20%20%20`,
+              method: op.method,
+              field: `?${pName}`,
+              category: "QueryParam: Whitespace",
+              desc: `Rejects whitespace in query parameter '${pName}'`,
+              payload: null,
+              expected: 422
+            });
+          } else if (p.schema?.type === 'integer') {
+            testCases.push({
+              opMethod,
+              opPath,
+              endpoint: `${op.path}?${pName}=-1`,
+              method: op.method,
+              field: `?${pName}`,
+              category: "QueryParam: Below Minimum",
+              desc: `Rejects negative value (-1) for query parameter '${pName}'`,
+              payload: null,
+              expected: 422
+            });
+          }
+        });
+
+        // 3. Header & Auth Fuzzing
+        const authHeader = rawParams.find(p => p.in === 'header' && p.name.toLowerCase() === 'authorization');
+        if (authHeader && authHeader.required) {
+          testCases.push({
+            opMethod,
+            opPath,
+            endpoint: op.path.replace(/\{([^}]+)\}/g, 'usr_101'),
+            method: op.method,
+            field: 'Header: Authorization',
+            category: "Security: Missing Token",
+            desc: "Rejects request without required Bearer token with HTTP 401",
+            payload: null,
+            expected: 401
+          });
+        }
+
+        // 4. Path Variable Fuzzing
+        if (op.path.includes('{')) {
+          const shortPath = op.path.replace(/\{([^}]+)\}/g, 'x');
+          testCases.push({
+            opMethod,
+            opPath,
+            endpoint: shortPath,
+            method: op.method,
+            field: 'Path Variable: Length',
+            category: "Boundary: Min Length Violation",
+            desc: "Rejects path parameter below minimum required length ('x')",
+            payload: null,
+            expected: 422
+          });
+        }
+      });
+
+      // Merge client-side custom probes from localStorage
+      mergeCustomProbesFromStorage();
+
+      populateTestScopeDropdown();
+      renderEndpointPlannedTests();
+      renderPlannedTestTable();
+    }
+
+    // --- Custom Field Test Probes (Pure Client-Side / LocalStorage) ---
+    const ALLOWED_HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head', 'trace']);
+
+    function safeHttpMethod(method) {
+      const normalized = String(method || 'get').toLowerCase().trim();
+      return ALLOWED_HTTP_METHODS.has(normalized) ? normalized : 'get';
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeJs(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r")
+        .replace(/\u2028/g, "\\u2028")
+        .replace(/\u2029/g, "\\u2029");
+    }
+
+    function toPythonLiteral(val) {
+      if (val === null || val === undefined) return "None";
+      if (typeof val === "boolean") return val ? "True" : "False";
+      if (typeof val === "number") return Number.isFinite(val) ? String(val) : "None";
+      if (typeof val === "string") return JSON.stringify(val);
+      if (Array.isArray(val)) return "[" + val.map(toPythonLiteral).join(", ") + "]";
+      if (typeof val === "object") {
+        const entries = Object.entries(val).map(([k, v]) => `${JSON.stringify(k)}: ${toPythonLiteral(v)}`);
+        return "{" + entries.join(", ") + "}";
+      }
+      return "None";
+    }
+
+    function getCustomProbesFromStorage() {
+      try {
+        const raw = localStorage.getItem("specforge_custom_probes");
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error("Failed to load custom probes:", e);
+        return [];
+      }
+    }
+
+    function saveCustomProbesToStorage(probes) {
+      try {
+        localStorage.setItem("specforge_custom_probes", JSON.stringify(probes));
+      } catch (e) {
+        console.error("Failed to save custom probes:", e);
+      }
+    }
+
+    function mergeCustomProbesFromStorage() {
+      const customProbes = getCustomProbesFromStorage();
+      if (!Array.isArray(customProbes)) return;
+
+      customProbes.forEach(probe => {
+        const op = operations.find(o => o.method.toLowerCase() === probe.opMethod.toLowerCase() && o.path === probe.opPath);
+        if (!op) return;
+
+        let payload = null;
+        let endpoint = op.path;
+
+        let parsedVal = probe.value;
+        if (probe.valType === 'number') {
+          parsedVal = Number(probe.value);
+          if (isNaN(parsedVal)) parsedVal = probe.value;
+        } else if (probe.valType === 'boolean') {
+          parsedVal = (probe.value === true || String(probe.value).toLowerCase() === 'true');
+        } else if (probe.valType === 'json') {
+          try {
+            parsedVal = JSON.parse(probe.value);
+          } catch(e) {
+            parsedVal = probe.value;
+          }
+        }
+
+        const schema = op.raw?.requestBody?.content?.['application/json']?.schema;
+        const baseline = schema ? generateMockFromSchema(schema) : {};
+
+        if (probe.location === 'body') {
+          payload = { ...baseline, [probe.field]: parsedVal };
+        } else if (probe.location === 'query') {
+          const qKey = probe.field.replace(/^\?/, '');
+          endpoint = `${op.path}?${encodeURIComponent(qKey)}=${encodeURIComponent(probe.value)}`;
+        } else if (probe.location === 'path') {
+          endpoint = op.path.replace(/\{([^}]+)\}/g, encodeURIComponent(probe.value));
+        }
+
+        testCases.push({
+          id: probe.id,
+          isCustom: true,
+          opMethod: probe.opMethod.toLowerCase(),
+          opPath: probe.opPath,
+          endpoint: endpoint,
+          method: probe.opMethod.toLowerCase(),
+          field: probe.field,
+          location: probe.location,
+          category: probe.category || "Custom Boundary",
+          desc: probe.desc || `Custom test probe for '${probe.field}'`,
+          payload: payload,
+          expected: Number(probe.expected) || 422
+        });
+      });
+    }
+
+    function openAddCustomTestModal(prefilledField) {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      document.getElementById("custom-modal-route-method").className = `badge-method badge-${op.method}`;
+      document.getElementById("custom-modal-route-method").textContent = op.method.toUpperCase();
+      document.getElementById("custom-modal-route-path").textContent = op.path;
+
+      // Populate field dropdown
+      const sel = document.getElementById("custom-field-select");
+      sel.innerHTML = "";
+
+      const schema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      const rawParams = op.raw?.parameters || [];
+
+      // Add body fields
+      if (schema && schema.properties) {
+        const bodyOptGroup = document.createElement("optgroup");
+        bodyOptGroup.label = "Body Properties";
+        for (const propName of Object.keys(schema.properties)) {
+          const opt = document.createElement("option");
+          opt.value = propName;
+          opt.textContent = `${propName} (body)`;
+          opt.dataset.location = "body";
+          bodyOptGroup.appendChild(opt);
+        }
+        sel.appendChild(bodyOptGroup);
+      }
+
+      // Add query params
+      const queryParams = rawParams.filter(p => p.in === 'query');
+      if (queryParams.length > 0) {
+        const qOptGroup = document.createElement("optgroup");
+        qOptGroup.label = "Query Parameters";
+        queryParams.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = `?${p.name}`;
+          opt.textContent = `?${p.name} (query)`;
+          opt.dataset.location = "query";
+          qOptGroup.appendChild(opt);
+        });
+        sel.appendChild(qOptGroup);
+      }
+
+      // Add path params
+      const pathMatches = op.path.match(/\{([^}]+)\}/g) || [];
+      if (pathMatches.length > 0) {
+        const pOptGroup = document.createElement("optgroup");
+        pOptGroup.label = "Path Variables";
+        pathMatches.forEach(m => {
+          const pName = m.replace(/[{}]/g, '');
+          const opt = document.createElement("option");
+          opt.value = pName;
+          opt.textContent = `{${pName}} (path)`;
+          opt.dataset.location = "path";
+          pOptGroup.appendChild(opt);
+        });
+        sel.appendChild(pOptGroup);
+      }
+
+      // Add custom manual field option
+      const customOpt = document.createElement("option");
+      customOpt.value = "__custom__";
+      customOpt.textContent = "➕ Enter Custom Field Name...";
+      sel.appendChild(customOpt);
+
+      // Pre-select field if passed
+      if (prefilledField) {
+        const existing = [...sel.options].find(o => o.value === prefilledField);
+        if (existing) {
+          sel.value = prefilledField;
+        } else {
+          sel.value = "__custom__";
+          document.getElementById("custom-field-name-input").value = prefilledField;
+        }
+      } else {
+        if (sel.options.length > 1) {
+          sel.selectedIndex = 0;
+        }
+      }
+
+      onCustomFieldSelectChange();
+
+      // Reset form fields
+      document.getElementById("custom-category-input").value = "Custom Boundary";
+      document.getElementById("custom-expected-status").value = "422";
+      document.getElementById("custom-desc-input").value = "";
+      document.getElementById("custom-val-input").value = "";
+      document.getElementById("custom-val-error").style.display = "none";
+      document.querySelector('input[name="custom-val-type"][value="string"]').checked = true;
+      onCustomValTypeChange();
+
+      document.getElementById("custom-test-modal").style.display = "flex";
+    }
+
+    function closeAddCustomTestModal() {
+      document.getElementById("custom-test-modal").style.display = "none";
+    }
+
+    function onCustomFieldSelectChange() {
+      const sel = document.getElementById("custom-field-select");
+      const customInput = document.getElementById("custom-field-name-input");
+      const locSelect = document.getElementById("custom-field-location");
+
+      if (sel.value === "__custom__") {
+        customInput.style.display = "block";
+        customInput.focus();
+      } else {
+        customInput.style.display = "none";
+        const selectedOpt = sel.options[sel.selectedIndex];
+        if (selectedOpt && selectedOpt.dataset.location) {
+          locSelect.value = selectedOpt.dataset.location;
+        }
+      }
+    }
+
+    function onCustomValTypeChange() {
+      const type = document.querySelector('input[name="custom-val-type"]:checked')?.value || 'string';
+      const input = document.getElementById("custom-val-input");
+      if (type === 'string') {
+        input.placeholder = "Enter custom string value (e.g. admin' OR '1'='1 or <script>)...";
+      } else if (type === 'number') {
+        input.placeholder = "Enter numeric value (e.g. 99999 or -99)...";
+      } else if (type === 'boolean') {
+        input.placeholder = "true or false";
+      } else if (type === 'json') {
+        input.placeholder = '{\n  "custom_nested": "value"\n}';
+      }
+    }
+
+    function saveCustomFieldTest() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      const sel = document.getElementById("custom-field-select");
+      const customNameInput = document.getElementById("custom-field-name-input");
+      let fieldName = sel.value === "__custom__" ? customNameInput.value.trim() : sel.value;
+
+      const errEl = document.getElementById("custom-val-error");
+      errEl.style.display = "none";
+
+      if (!fieldName) {
+        errEl.textContent = "Please specify a target field name.";
+        errEl.style.display = "block";
+        return;
+      }
+
+      const location = document.getElementById("custom-field-location").value;
+      const category = document.getElementById("custom-category-input").value.trim() || "Custom Boundary";
+      const expected = parseInt(document.getElementById("custom-expected-status").value, 10) || 422;
+      const desc = document.getElementById("custom-desc-input").value.trim() || `Custom probe for '${fieldName}'`;
+      const valType = document.querySelector('input[name="custom-val-type"]:checked')?.value || 'string';
+      const rawVal = document.getElementById("custom-val-input").value;
+
+      if (valType === 'json') {
+        try {
+          JSON.parse(rawVal);
+        } catch (e) {
+          errEl.textContent = "Invalid JSON format: " + e.message;
+          errEl.style.display = "block";
+          return;
+        }
+      } else if (valType === 'number') {
+        if (rawVal.trim() === "" || isNaN(Number(rawVal))) {
+          errEl.textContent = "Please enter a valid numeric value.";
+          errEl.style.display = "block";
+          return;
+        }
+      }
+
+      const customProbe = {
+        id: "cust_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+        opMethod: op.method.toLowerCase(),
+        opPath: op.path,
+        field: fieldName,
+        location: location,
+        category: category,
+        desc: desc,
+        valType: valType,
+        value: rawVal,
+        expected: expected,
+        createdAt: Date.now()
+      };
+
+      const probes = getCustomProbesFromStorage();
+      probes.unshift(customProbe);
+      saveCustomProbesToStorage(probes);
+
+      // Refresh synthesized test plan & views
+      synthesizeTestPlan();
+
+      // Ensure planned tests section is expanded
+      isEndpointAccordionOpen = true;
+      const body = document.getElementById("endpoint-tests-body");
+      const chevron = document.getElementById("accordion-chevron");
+      if (body) body.style.display = "block";
+      if (chevron) chevron.classList.remove("collapsed");
+
+      closeAddCustomTestModal();
+    }
+
+    function deleteCustomProbe(probeId) {
+      if (!confirm("Are you sure you want to remove this custom test?")) return;
+      const probes = getCustomProbesFromStorage();
+      const updated = probes.filter(p => p.id !== probeId);
+      saveCustomProbesToStorage(updated);
+      synthesizeTestPlan();
+    }
+
+    let isEndpointAccordionOpen = false;
+    let allFieldGroupsExpanded = true;
+
+    function toggleEndpointAccordion() {
+      isEndpointAccordionOpen = !isEndpointAccordionOpen;
+      const body = document.getElementById("endpoint-tests-body");
+      const chevron = document.getElementById("accordion-chevron");
+      if (body) {
+        body.style.display = isEndpointAccordionOpen ? "block" : "none";
+      }
+      if (chevron) {
+        chevron.classList.toggle("collapsed", !isEndpointAccordionOpen);
+      }
+    }
+
+    function toggleAllFieldGroups() {
+      allFieldGroupsExpanded = !allFieldGroupsExpanded;
+      document.querySelectorAll(".field-group-body").forEach(b => {
+        b.style.display = allFieldGroupsExpanded ? "flex" : "none";
+      });
+      document.querySelectorAll(".field-group-header .accordion-chevron").forEach(c => {
+        c.classList.toggle("collapsed", !allFieldGroupsExpanded);
+      });
+    }
+
+    function toggleFieldGroup(safeId) {
+      const body = document.getElementById(`body-${safeId}`);
+      const chevron = document.getElementById(`chevron-${safeId}`);
+      if (!body) return;
+      const isClosed = body.style.display === "none";
+      body.style.display = isClosed ? "flex" : "none";
+      if (chevron) {
+        chevron.classList.toggle("collapsed", !isClosed);
+      }
+    }
+
+    async function runFieldGroupProbes(safeId) {
+      const body = document.getElementById(`body-${safeId}`);
+      if (!body) return;
+      body.style.display = "flex";
+      const chevron = document.getElementById(`chevron-${safeId}`);
+      if (chevron) chevron.classList.remove("collapsed");
+
+      const testBtns = body.querySelectorAll(".btn-run-probe");
+      for (const btn of testBtns) {
+        btn.click();
+        await new Promise(r => setTimeout(r, 60));
+      }
+    }
+
+    function renderEndpointPlannedTests() {
+      const container = document.getElementById("endpoint-planned-tests-container");
+      const badge = document.getElementById("endpoint-planned-count-badge");
+      if (!container || !badge) return;
+
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      const routeCases = testCases.filter(tc => tc.opMethod === op.method.toLowerCase() && tc.opPath === op.path);
+      badge.textContent = `${routeCases.length} Tests Planned`;
+
+      if (routeCases.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1.25rem;">No schema-constrained boundary tests synthesized for this route.</div>`;
+        return;
+      }
+
+      // Group test cases by field
+      const fieldGroups = {};
+      routeCases.forEach((tc, i) => {
+        const key = tc.field;
+        if (!fieldGroups[key]) {
+          fieldGroups[key] = [];
+        }
+        fieldGroups[key].push({ tc, globalIndex: i });
+      });
+
+      container.innerHTML = "";
+      Object.entries(fieldGroups).forEach(([fieldName, items], groupIndex) => {
+        const safeId = `field-grp-${groupIndex}`;
+
+        // Determine location tag
+        let locBadge = `<span style="font-size:0.68rem; font-weight:700; text-transform:uppercase; color:var(--muted-foreground); background:var(--secondary); border:1px solid var(--border); padding:0.1rem 0.35rem; border-radius:3px;">`;
+        if (fieldName.startsWith('?') || items.some(it => it.tc.queryParams && Object.keys(it.tc.queryParams).length > 0)) locBadge += `Query`;
+        else if (fieldName.startsWith('Header:')) locBadge += `Header`;
+        else if (fieldName.startsWith('Path')) locBadge += `Path`;
+        else locBadge += `Body`;
+        locBadge += `</span>`;
+
+        const countText = items.length === 1 ? "1 test" : `${items.length} tests`;
+
+        const groupCard = document.createElement("div");
+        groupCard.className = "field-group-card";
+        groupCard.innerHTML = `
+          <div class="field-group-header" onclick="toggleFieldGroup('${safeId}')">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              ${locBadge}
+              <span class="field-tag">${escapeHtml(fieldName)}</span>
+              <span class="sub-tab-badge" style="background: var(--accent); color: var(--accent-foreground); border: 1px solid var(--border); font-size: 0.7rem; font-weight: 600;">
+                ${countText}
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <button class="btn btn-outline btn-add-custom-probe" style="font-size: 0.68rem; padding: 0.16rem 0.45rem;" title="Add custom probe for this field">
+                + Add Test
+              </button>
+              <button class="btn btn-outline-primary" style="font-size: 0.7rem; padding: 0.18rem 0.5rem;" onclick="event.stopPropagation(); runFieldGroupProbes('${safeId}')" title="Run all tests for this field">
+                ▶ Test Field Probes (${items.length})
+              </button>
+              <span id="chevron-${safeId}" class="accordion-chevron">▼</span>
+            </div>
+          </div>
+          <div id="body-${safeId}" class="field-group-body" style="display: flex;">
+          </div>
+        `;
+
+        const addCustomBtn = groupCard.querySelector(".btn-add-custom-probe");
+        if (addCustomBtn) {
+          addCustomBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openAddCustomTestModal(fieldName);
+          });
+        }
+
+        const bodyEl = groupCard.querySelector(`#body-${safeId}`);
+
+        items.forEach(({ tc, globalIndex }) => {
+          let valPreview = "";
+          if (tc.queryParams && Object.keys(tc.queryParams).length > 0) {
+            valPreview = JSON.stringify(tc.queryParams);
+          } else if (tc.payload !== null && tc.payload !== undefined && typeof tc.payload === 'object' && tc.field !== '[body_root]') {
+            const targetVal = tc.payload[tc.field];
+            if (targetVal !== undefined) {
+              valPreview = JSON.stringify(targetVal);
+            } else {
+              valPreview = `(Field omitted)`;
+            }
+          } else if (tc.payload !== null && tc.payload !== undefined) {
+            valPreview = JSON.stringify(tc.payload);
+          } else if (tc.field.startsWith('?')) {
+            const qVal = tc.endpoint.split('?')[1] || '';
+            valPreview = decodeURIComponent(qVal);
+          } else if (tc.field.startsWith('Header:')) {
+            valPreview = `Missing auth header`;
+          } else {
+            valPreview = `Below min length ('x')`;
+          }
+
+          const itemEl = document.createElement("div");
+          itemEl.className = "field-probe-item";
+          itemEl.innerHTML = `
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                <span style="font-weight: 600; color: var(--foreground); font-size: 0.83rem;">${escapeHtml(tc.category)}</span>
+                ${tc.isCustom ? `<span style="font-size:0.62rem; font-weight:700; color:var(--primary); background:var(--accent); border:1px solid var(--border); padding:0.06rem 0.35rem; border-radius:3px; letter-spacing:0.03em;">CUSTOM</span>` : ''}
+              </div>
+              <div style="color: var(--muted-foreground); font-size: 0.75rem; margin-top: 0.1rem;">${escapeHtml(tc.desc)}</div>
+              <div style="margin-top: 0.25rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--link); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px;">
+                Probe Value: <code>${escapeHtml(valPreview)}</code>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+              <span style="font-size: 0.74rem; color: var(--muted-foreground);">Expected: <strong style="color: var(--foreground);">${tc.allowAccepted ? '2xx / 4xx (No 500)' : escapeHtml(tc.expected)}</strong></span>
+              <div id="route-probe-res-${globalIndex}"><span class="pill pill-planned">READY</span></div>
+            </div>
+            <div class="probe-actions" style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
+              <button class="btn btn-outline-primary btn-run-probe" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="runSingleRouteProbe(${globalIndex}, 'route-probe-res-${globalIndex}')">
+                ▶ Test
+              </button>
+              <button class="btn-icon" onclick="inspectSingleRouteProbe(${globalIndex})" title="Inspect payload">
+                🔍
+              </button>
+            </div>
+          `;
+          if (tc.isCustom) {
+            const delBtn = document.createElement("button");
+            delBtn.className = "btn-icon";
+            delBtn.title = "Delete custom probe";
+            delBtn.style.cssText = "color:var(--destructive); font-size: 0.8rem; padding: 0.2rem 0.35rem;";
+            delBtn.textContent = "🗑️";
+            delBtn.addEventListener("click", () => deleteCustomProbe(tc.id));
+            itemEl.querySelector(".probe-actions").appendChild(delBtn);
+          }
+          bodyEl.appendChild(itemEl);
+        });
+
+        container.appendChild(groupCard);
+      });
+    }
+
+    async function executeProbeFetch(tc) {
+      const start = performance.now();
+      let status = 0;
+      let respText = "";
+      try {
+        const method = safeHttpMethod(tc.method).toUpperCase();
+        const headers = { ...(tc.headers || {}) };
+        const hasBody = tc.payload !== null && tc.payload !== undefined && !["GET", "HEAD"].includes(method);
+        if (hasBody && !Object.keys(headers).some(k => k.toLowerCase() === "content-type")) {
+          headers["Content-Type"] = "application/json";
+        }
+
+        let targetUrl = tc.endpoint;
+        if (tc.queryParams && Object.keys(tc.queryParams).length > 0) {
+          const qs = new URLSearchParams();
+          Object.entries(tc.queryParams).forEach(([k, v]) => qs.append(k, String(v)));
+          targetUrl += (targetUrl.includes("?") ? "&" : "?") + qs.toString();
+        }
+
+        const opts = { method, headers };
+        if (hasBody) {
+          opts.body = JSON.stringify(tc.payload);
+        }
+
+        const res = await fetch(targetUrl, opts);
+        status = res.status;
+        respText = await res.text();
+      } catch (e) {
+        status = 0;
+        respText = e.message;
+      }
+      const latency = Math.round(performance.now() - start);
+      return { status, respText, latency };
+    }
+
+    function classifyProbeResult(tc, status) {
+      if (status >= 500) {
+        return { kind: "crash", pillClass: "pill-crash", statusLabel: "CRASH (500)" };
+      }
+      if (tc.allowAccepted) {
+        if ((status >= 200 && status < 300) || status === 400 || status === 422) {
+          return { kind: "pass", pillClass: "pill-pass", statusLabel: `PASS (${status})` };
+        }
+        return { kind: "other", pillClass: "pill-leak", statusLabel: `${status}` };
+      }
+      if (tc.isNegative === false) {
+        if (status >= 200 && status < 300) {
+          return { kind: "pass", pillClass: "pill-pass", statusLabel: `PASS (${status})` };
+        }
+        return { kind: "other", pillClass: "pill-leak", statusLabel: `FAIL (${status})` };
+      }
+      if (status >= 200 && status < 300) {
+        return { kind: "leak", pillClass: "pill-leak", statusLabel: `LEAK (${status})` };
+      }
+      if (status === 400 || status === 422 || status === 401) {
+        return { kind: "pass", pillClass: "pill-pass", statusLabel: `PASS (${status})` };
+      }
+      return { kind: "other", pillClass: "pill-leak", statusLabel: `${status}` };
+    }
+
+    async function runSingleRouteProbe(idx, resultElementId) {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      const routeCases = testCases.filter(tc => tc.opMethod === op.method.toLowerCase() && tc.opPath === op.path);
+      const tc = routeCases[idx];
+      if (!tc) return;
+
+      const resEl = document.getElementById(resultElementId);
+      if (resEl) resEl.innerHTML = `<span style="font-size:0.75rem; color: var(--text-muted);">Testing...</span>`;
+
+      const { status, latency } = await executeProbeFetch(tc);
+      const { pillClass, statusLabel } = classifyProbeResult(tc, status);
+
+      if (resEl) {
+        resEl.innerHTML = `<span class="pill ${pillClass}">${escapeHtml(statusLabel)}</span> <span style="font-size:0.72rem; color:var(--text-muted); margin-left:0.25rem;">${latency}ms</span>`;
+      }
+    }
+
+    function inspectSingleRouteProbe(idx) {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      const routeCases = testCases.filter(tc => tc.opMethod === op.method.toLowerCase() && tc.opPath === op.path);
+      const tc = routeCases[idx];
+      if (!tc) return;
+      alert(`Planned Boundary Test Probe Details:\n\nTarget Field: ${tc.field}\nCategory: ${tc.category}\nDescription: ${tc.desc}\nExpected Status: HTTP ${tc.expected}\nEndpoint Target: ${tc.endpoint}\n\nPayload:\n` + JSON.stringify(tc.payload, null, 2));
+    }
+
+    function populateTestScopeDropdown() {
+      const sel = document.getElementById("test-scope-select");
+      if (!sel) return;
+      const currentVal = sel.value || "all";
+      sel.innerHTML = `<option value="all">🌐 All Endpoints (${testCases.length} tests)</option>`;
+
+      operations.forEach(op => {
+        const key = `${op.method.toLowerCase()}:${op.path}`;
+        const count = testCases.filter(tc => tc.opMethod === op.method.toLowerCase() && tc.opPath === op.path).length;
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = `${op.method.toUpperCase()} ${op.path} (${count} tests)`;
+        sel.appendChild(opt);
+      });
+
+      if ([...sel.options].some(o => o.value === currentVal)) {
+        sel.value = currentVal;
+      }
+      updateScopeStats();
+    }
+
+    function onTestScopeChange() {
+      updateScopeStats();
+      renderPlannedTestTable();
+    }
+
+    function renderPlannedTestTable() {
+      const tbody = document.getElementById("test-table-body");
+      const activeCases = getActiveTestCases();
+      window.__activeTestCases = activeCases;
+      const statTotalEl = document.getElementById("stat-total");
+      if (statTotalEl) statTotalEl.textContent = activeCases.length;
+      tbody.innerHTML = "";
+
+      if (activeCases.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No tests planned for this scope.</td></tr>`;
+        return;
+      }
+
+      activeCases.forEach((tc, i) => {
+        const method = safeHttpMethod(tc.opMethod);
+        const tr = document.createElement("tr");
+        tr.id = `test-row-${i}`;
+        tr.innerHTML = `
+          <td>
+            <span class="pill pill-planned">PLANNED</span>
+            ${tc.isCustom ? `<span style="font-size:0.62rem; font-weight:700; color:var(--primary); background:var(--accent); border:1px solid var(--border); padding:0.06rem 0.35rem; border-radius:3px; margin-left:0.3rem;">CUSTOM</span>` : ''}
+          </td>
+          <td><span class="badge-method badge-${method}">${escapeHtml(method.toUpperCase())}</span> <code style="font-size:0.8rem; color: var(--foreground); margin-left: 0.35rem;">${escapeHtml(tc.opPath)}</code></td>
+          <td><span class="field-tag">${escapeHtml(tc.field)}</span></td>
+          <td><strong>${escapeHtml(tc.category)}</strong><br><span style="color:var(--muted-foreground);font-size:0.75rem;">${escapeHtml(tc.desc)}</span></td>
+          <td>${tc.allowAccepted ? '2xx / 4xx (No 500)' : `Expected ${escapeHtml(tc.expected)}`}</td>
+          <td>--</td>
+          <td class="table-actions" style="white-space: nowrap;">
+            <button class="btn btn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem;" onclick="runSingleBoundaryTest(${i})">▶ Run</button>
+            <button class="btn btn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem;" onclick="inspectTestPayload(${i})">Inspect</button>
+          </td>
+        `;
+        if (tc.isCustom) {
+          const delBtn = document.createElement("button");
+          delBtn.className = "btn-icon";
+          delBtn.title = "Delete custom probe";
+          delBtn.style.color = "var(--destructive)";
+          delBtn.textContent = "🗑️";
+          delBtn.addEventListener("click", () => deleteCustomProbe(tc.id));
+          tr.querySelector(".table-actions").appendChild(delBtn);
+        }
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getActiveTestCases() {
+      const sel = document.getElementById("test-scope-select");
+      const scope = sel ? sel.value : "all";
+      if (!scope || scope === "all") return testCases;
+      const [method, path] = scope.split(":");
+      return testCases.filter(tc => tc.opMethod === method && tc.opPath === path);
+    }
+
+    function updateScopeStats() {
+      const activeCases = getActiveTestCases();
+      document.getElementById("stat-total").textContent = activeCases.length;
+      document.getElementById("stat-pass").textContent = "0";
+      document.getElementById("stat-leak").textContent = "0";
+      document.getElementById("stat-crash").textContent = "0";
+    }
+
+    function runBoundaryTestsForCurrentRoute() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      switchTab('testing');
+      const sel = document.getElementById("test-scope-select");
+      if (sel) {
+        sel.value = `${op.method.toLowerCase()}:${op.path}`;
+        onTestScopeChange();
+      }
+      executeBoundaryTests();
+    }
+
+    async function runSingleBoundaryTest(idx) {
+      const activeCases = getActiveTestCases();
+      const tc = activeCases[idx];
+      if (!tc) return;
+
+      const row = document.getElementById(`test-row-${idx}`);
+      if (row) {
+        row.cells[0].innerHTML = `<span style="font-size:0.75rem; color:var(--text-muted);">Testing...</span>`;
+      }
+
+      const { status, latency } = await executeProbeFetch(tc);
+      const { pillClass, statusLabel } = classifyProbeResult(tc, status);
+
+      if (row) {
+        row.cells[0].innerHTML = `<span class="pill ${pillClass}">${escapeHtml(statusLabel)}</span>`;
+        row.cells[4].textContent = tc.allowAccepted
+          ? `2xx/4xx | Got ${status}`
+          : `Expected ${tc.expected} | Got ${status}`;
+        row.cells[5].textContent = `${latency} ms`;
+      }
+    }
+
+    async function executeBoundaryTests() {
+      const activeCases = getActiveTestCases();
+      window.__activeTestCases = activeCases;
+      renderPlannedTestTable();
+      let passCount = 0;
+      let leakCount = 0;
+      let crashCount = 0;
+
+      for (let i = 0; i < activeCases.length; i++) {
+        const tc = activeCases[i];
+        const row = document.getElementById(`test-row-${i}`);
+        if (row) {
+          row.cells[0].innerHTML = `<span style="font-size:0.75rem; color:var(--text-muted);">Testing...</span>`;
+        }
+
+        const { status, latency } = await executeProbeFetch(tc);
+        const { kind, pillClass, statusLabel } = classifyProbeResult(tc, status);
+
+        if (kind === "crash") crashCount++;
+        else if (kind === "leak") leakCount++;
+        else if (kind === "pass") passCount++;
+
+        if (row) {
+          row.cells[0].innerHTML = `<span class="pill ${pillClass}">${escapeHtml(statusLabel)}</span>`;
+          row.cells[4].textContent = tc.allowAccepted
+            ? `2xx/4xx | Got ${status}`
+            : `Expected ${tc.expected} | Got ${status}`;
+          row.cells[5].textContent = `${latency} ms`;
+        }
+
+        document.getElementById("stat-pass").textContent = passCount;
+        document.getElementById("stat-leak").textContent = leakCount;
+        document.getElementById("stat-crash").textContent = crashCount;
+      }
+    }
+
+    function runAllBoundaryTests() {
+      const sel = document.getElementById("test-scope-select");
+      if (sel) sel.value = "all";
+      onTestScopeChange();
+      executeBoundaryTests();
+    }
+
+    function inspectTestPayload(idx) {
+      const tc = (window.__activeTestCases && window.__activeTestCases[idx]) || testCases[idx];
+      alert(`Mutated Payload / Target for '${tc.field}':\n\nEndpoint: ${tc.endpoint}\nPayload: ` + JSON.stringify(tc.payload, null, 2));
+    }
+
+    function openPytestModal() {
+      const activeCases = getActiveTestCases();
+      const sel = document.getElementById("test-scope-select");
+      const scopeLabel = sel && sel.value !== "all" ? `Scope: ${sel.value.toUpperCase()}` : "Scope: All Endpoints";
+      let code = `# Auto-generated by SpecForge (${scopeLabel})\nimport pytest\nimport httpx\n\nBASE_URL = ${toPythonLiteral(window.location.origin || "http://localhost:8000")}\n\n@pytest.mark.parametrize(\n    "endpoint,method,payload,query_params,headers,expected,is_negative,allow_accepted",\n    [\n`;
+      activeCases.forEach(tc => {
+        const method = safeHttpMethod(tc.method).toUpperCase();
+        const isNegative = tc.isNegative !== false;
+        const allowAccepted = Boolean(tc.allowAccepted);
+        code += `        (${toPythonLiteral(tc.endpoint)}, ${toPythonLiteral(method)}, ${toPythonLiteral(tc.payload ?? null)}, ${toPythonLiteral(tc.queryParams || {})}, ${toPythonLiteral(tc.headers || {})}, ${Number(tc.expected) || 422}, ${isNegative ? "True" : "False"}, ${allowAccepted ? "True" : "False"}),\n`;
+      });
+      code += `    ],\n)\ndef test_contract_boundaries(endpoint, method, payload, query_params, headers, expected, is_negative, allow_accepted):\n    with httpx.Client(base_url=BASE_URL, timeout=10.0) as client:\n        kwargs = {}\n        if payload is not None and method.upper() not in ("GET", "HEAD"):\n            kwargs["json"] = payload\n        if query_params:\n            kwargs["params"] = query_params\n        if headers:\n            kwargs["headers"] = headers\n        res = client.request(method, endpoint, **kwargs)\n        assert res.status_code != 500, "Server crashed with 500!"\n        if allow_accepted:\n            assert 200 <= res.status_code < 300 or res.status_code in (400, 422)\n        elif is_negative:\n            assert res.status_code in (400, 422)\n        else:\n            assert 200 <= res.status_code < 300\n`;
+
+      document.getElementById("pytest-code-output").textContent = code;
+      document.getElementById("pytest-modal").style.display = "flex";
+    }
+
+    function closePytestModal() {
+      document.getElementById("pytest-modal").style.display = "none";
+    }
+
+    function copyPytestCode() {
+      const text = document.getElementById("pytest-code-output").textContent;
+      navigator.clipboard.writeText(text);
+      alert("Pytest code copied to clipboard!");
+    }
+
+    function updateCodeSnippet() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      const host = window.location.origin || "http://localhost:8000";
+      const resolvedPath = getResolvedUrl();
+      const fullUrl = `${host}${resolvedPath}`;
+
+      const activeHeaders = requestHeaders.filter(h => h.enabled && h.key.trim());
+      const activeQueries = queryParams.filter(q => q.enabled && q.key.trim());
+      const bodyText = document.getElementById("request-body-input").value;
+      const hasBody = ['post', 'put', 'patch', 'delete'].includes(op.method) && bodyText.trim();
+
+      let snippet = "";
+      if (snippetLang === 'curl') {
+        const parts = [`curl -X ${op.method.toUpperCase()} '${fullUrl}'`];
+        activeHeaders.forEach(h => {
+          parts.push(`  -H '${h.key.trim()}: ${h.value.replace(/'/g, "'\\''")}'`);
+        });
+        if (hasBody) {
+          parts.push(`  -d '${bodyText.replace(/'/g, "'\\''")}'`);
+        }
+        snippet = parts.join(" \\\n");
+      } else if (snippetLang === 'httpx') {
+        const headerDict = {};
+        activeHeaders.forEach(h => { headerDict[h.key.trim()] = h.value; });
+        const paramDict = {};
+        activeQueries.forEach(q => { paramDict[q.key.trim()] = q.value; });
+
+        snippet = `import httpx\n\n`;
+        if (Object.keys(headerDict).length > 0) {
+          snippet += `headers = ${JSON.stringify(headerDict, null, 4)}\n`;
+        }
+        snippet += `with httpx.Client() as client:\n`;
+        snippet += `    response = client.${op.method}(\n        "${fullUrl}",\n`;
+        if (Object.keys(headerDict).length > 0) snippet += `        headers=headers,\n`;
+        if (hasBody) snippet += `        json=${bodyText},\n`;
+        snippet += `    )\n    print(response.status_code, response.json())`;
+      } else if (snippetLang === 'requests') {
+        const headerDict = {};
+        activeHeaders.forEach(h => { headerDict[h.key.trim()] = h.value; });
+
+        snippet = `import requests\n\n`;
+        if (Object.keys(headerDict).length > 0) {
+          snippet += `headers = ${JSON.stringify(headerDict, null, 4)}\n`;
+        }
+        snippet += `response = requests.${op.method}(\n    "${fullUrl}",\n`;
+        if (Object.keys(headerDict).length > 0) snippet += `    headers=headers,\n`;
+        if (hasBody) snippet += `    json=${bodyText},\n`;
+        snippet += `)\nprint(response.status_code, response.json())`;
+      }
+
+      document.getElementById("code-snippet-box").textContent = snippet;
+    }
+
+    function setSnippetLang(lang) {
+      snippetLang = lang;
+      updateCodeSnippet();
+    }
+  </script>
+</body>
+</html>

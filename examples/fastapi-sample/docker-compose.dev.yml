@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  fastapi-app:
+    build: .
+    ports:
+      - "8000:8000"
+
+  specforge:
+    image: specforge/dev:latest
+    ports:
+      - "4000:4000"
+    environment:
+      - SPEC_SOURCE=http://fastapi-app:8000/openapi.json
+      - TARGET_URL=http://fastapi-app:8000
+      - EXPORT_TARGET=pytest
+    volumes:
+      - ./tests/generated:/output
+    depends_on:
+      - fastapi-app

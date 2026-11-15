@@ -1,0 +1,37 @@
+[workspace]
+members = [
+    "crates/specforge-core",
+    "crates/specforge-fuzzer",
+    "crates/specforge-mock",
+    "crates/specforge-exporters",
+    "crates/specforge-server",
+    "crates/specforge-cli",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["SpecForge Team <team@specforge.dev>"]
+license = "MIT"
+repository = "https://github.com/specforge-api/specforge-dev"
+homepage = "https://specforge-api.github.io/specforge/"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+tokio = { version = "1.38", features = ["full"] }
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "fs"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+clap = { version = "4.5", features = ["derive", "env"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.8", features = ["v4", "serde"] }
+regex = "1.10"
+minijinja = { version = "2.0", features = ["loader"] }
+rust-embed = "8.4"
+notify = "6.1"
+url = "2.5"
+thiserror = "1.0"

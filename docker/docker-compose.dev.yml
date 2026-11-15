@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  # -----------------------------------------------------------------
+  # SpecForge Dev: Zero-Code Universal API Studio & Fuzzer
+  # Works with Node.js/Express, Python/FastAPI, Go, Rust, or Java!
+  # -----------------------------------------------------------------
+  specforge:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: specforge/dev:latest
+    container_name: specforge-dev
+    restart: unless-stopped
+    ports:
+      - "4000:4000"   # SpecForge Studio Web UI & Dynamic Mock Server
+    environment:
+      # URL to live backend spec, or local path inside container
+      - SPEC_SOURCE=http://api:8000/openapi.json
+      # Target backend service URL on the Docker network
+      - TARGET_URL=http://api:8000
+      # Export format: 'jest' (Node.js/Express) or 'pytest' (Python)
+      - EXPORT_TARGET=jest
+      - THEME=dark
+      - FAIL_ON_500=true
+    volumes:
+      # Mount local specification files (OpenAPI, Swagger, or OpenAI tools)
+      - ./specs:/specs:ro
+      # Export auto-generated Jest / Pytest test files directly to host
+      - ./output:/output
+    networks:
+      - dev-net
+
+networks:
+  dev-net:
+    driver: bridge
