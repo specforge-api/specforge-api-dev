@@ -48,9 +48,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let app_state = Arc::new(AppState {
                 spec: RwLock::new(api_spec),
+                spec_source: spec.clone(),
                 target_url,
                 export_target,
                 theme,
+                version: std::sync::atomic::AtomicU64::new(1),
+            });
+
+            // Spawn background live-reload watcher
+            let watcher_state = app_state.clone();
+            let watcher_source = spec.clone();
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(2));
+                let mut last_content: Option<String> = None;
+                let client = reqwest::Client::builder()
+                    .timeout(std::time::Duration::from_secs(3))
+                    .build()
+                    .unwrap_or_default();
+
+                loop {
+                    interval.tick().await;
+
+                    let fetch_res = if watcher_source.starts_with("http://") || watcher_source.starts_with("https://") {
+                        match client.get(&watcher_source).send().await {
+                            Ok(resp) if resp.status().is_success() => resp.text().await.ok(),
+                            _ => None,
+                        }
+                    } else {
+                        tokio::fs::read_to_string(&watcher_source).await.ok()
+                    };
+
+                    if let Some(content) = fetch_res {
+                        if let Some(ref prev) = last_content {
+                            if *prev != content {
+                                let parsed_val: Option<serde_json::Value> = serde_json::from_str(&content)
+                                    .or_else(|_| serde_yaml::from_str(&content))
+                                    .ok();
+
+                                if let Some(raw_val) = parsed_val {
+                                    if let Ok(new_spec) = parse_spec_auto(&raw_val) {
+                                        let op_count = new_spec.operations.len();
+                                        let title = new_spec.title.clone();
+                                        {
+                                            let mut guard = watcher_state.spec.write().await;
+                                            *guard = new_spec;
+                                        }
+                                        watcher_state.version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                                        println!("⚡ \x1b[1;33m[SpecForge Auto-Reload]\x1b[0m Detected schema update! Hot-reloaded \x1b[32m{} operations\x1b[0m for: \x1b[1m{}\x1b[0m", op_count, title);
+                                    }
+                                }
+                            }
+                        }
+                        last_content = Some(content);
+                    }
+                }
             });
 
             let router = create_router(app_state);
