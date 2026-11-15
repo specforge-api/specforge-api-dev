@@ -1309,6 +1309,73 @@
     </main>
   </div>
 
+  <!-- Inspect Probe Details & Payload Modal -->
+  <div id="inspect-probe-modal" class="modal-overlay">
+    <div class="modal-box" style="width: 650px; max-width: 95vw;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.1rem;">🔍</span>
+          <h3 style="font-size: 1.05rem; font-weight: 700;">Test Probe & Payload Details</h3>
+        </div>
+        <button onclick="closeInspectProbeModal()" class="btn-icon" style="font-size: 1.2rem;">✕</button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.85rem; max-height: 70vh; overflow-y: auto;">
+        <!-- Route Banner -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--secondary); border: 1px solid var(--border); border-radius: calc(var(--radius) - 4px); font-size: 0.82rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="inspect-modal-method" class="badge-method badge-post">POST</span>
+            <span id="inspect-modal-endpoint" style="font-family: var(--font-mono); font-weight: 600;">/api/v1/users</span>
+          </div>
+          <span id="inspect-modal-expected" class="pill pill-planned">Expected: 422</span>
+        </div>
+
+        <!-- Metadata Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; font-size: 0.8rem;">
+          <div style="background: var(--background); border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem 0.75rem;">
+            <div style="color: var(--muted-foreground); font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Target Field</div>
+            <div id="inspect-modal-field" style="font-weight: 600; font-family: var(--font-mono); margin-top: 0.15rem;">username</div>
+          </div>
+          <div style="background: var(--background); border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem 0.75rem;">
+            <div style="color: var(--muted-foreground); font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Mutation Category</div>
+            <div id="inspect-modal-category" style="font-weight: 600; margin-top: 0.15rem;">StringBoundary</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="color: var(--muted-foreground); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Description</div>
+          <div id="inspect-modal-desc" style="font-size: 0.82rem; color: var(--foreground); line-height: 1.4;">Probe description</div>
+        </div>
+
+        <!-- Request Body / Payload or Query Params -->
+        <div id="inspect-modal-payload-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <label id="inspect-modal-data-label" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground);">Request Body (JSON Payload)</label>
+            <button class="btn btn-outline" style="font-size: 0.68rem; padding: 0.15rem 0.5rem;" onclick="copyInspectPayload()">Copy</button>
+          </div>
+          <pre id="inspect-modal-payload" class="code-box" style="height: 160px; overflow: auto; margin: 0; font-size: 0.78rem;"></pre>
+        </div>
+
+        <!-- Query Params (if present) -->
+        <div id="inspect-modal-query-section" style="display: none;">
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground); margin-bottom: 0.35rem;">Query Parameters</div>
+          <pre id="inspect-modal-query" class="code-box" style="height: 80px; overflow: auto; margin: 0; font-size: 0.78rem;"></pre>
+        </div>
+
+        <!-- cURL Reproduction -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground);">Reproduction cURL Command</label>
+            <button class="btn btn-outline" style="font-size: 0.68rem; padding: 0.15rem 0.5rem;" onclick="copyInspectCurl()">Copy cURL</button>
+          </div>
+          <pre id="inspect-modal-curl" class="code-box" style="height: 70px; overflow: auto; margin: 0; font-size: 0.74rem; font-family: var(--font-mono);"></pre>
+        </div>
+      </div>
+      <div style="padding: 0.85rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button class="btn btn-outline" onclick="closeInspectProbeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Pytest Code Export Modal -->
   <div id="pytest-modal" class="modal-overlay">
     <div class="modal-box">
@@ -2847,7 +2914,7 @@
       const routeCases = testCases.filter(tc => tc.opMethod === op.method.toLowerCase() && tc.opPath === op.path);
       const tc = routeCases[idx];
       if (!tc) return;
-      alert(`Planned Boundary Test Probe Details:\n\nTarget Field: ${tc.field}\nCategory: ${tc.category}\nDescription: ${tc.desc}\nExpected Status: HTTP ${tc.expected}\nEndpoint Target: ${tc.endpoint}\n\nPayload:\n` + JSON.stringify(tc.payload, null, 2));
+      openInspectProbeModal(tc);
     }
 
     function populateTestScopeDropdown() {
@@ -3016,7 +3083,103 @@
 
     function inspectTestPayload(idx) {
       const tc = (window.__activeTestCases && window.__activeTestCases[idx]) || testCases[idx];
-      alert(`Mutated Payload / Target for '${tc.field}':\n\nEndpoint: ${tc.endpoint}\nPayload: ` + JSON.stringify(tc.payload, null, 2));
+      if (!tc) return;
+      openInspectProbeModal(tc);
+    }
+
+    function openInspectProbeModal(tc) {
+      if (!tc) return;
+      const modal = document.getElementById("inspect-probe-modal");
+      if (!modal) return;
+
+      const method = safeHttpMethod(tc.opMethod || tc.method).toUpperCase();
+      const methodBadge = document.getElementById("inspect-modal-method");
+      if (methodBadge) {
+        methodBadge.textContent = method;
+        methodBadge.className = `badge-method badge-${method.toLowerCase()}`;
+      }
+
+      const endpointEl = document.getElementById("inspect-modal-endpoint");
+      if (endpointEl) endpointEl.textContent = tc.endpoint || tc.opPath;
+
+      const expectedEl = document.getElementById("inspect-modal-expected");
+      if (expectedEl) {
+        expectedEl.textContent = tc.allowAccepted ? "Expected: 2xx/4xx (No 500)" : `Expected: HTTP ${tc.expected}`;
+      }
+
+      const fieldEl = document.getElementById("inspect-modal-field");
+      if (fieldEl) fieldEl.textContent = tc.field || "[body_root]";
+
+      const catEl = document.getElementById("inspect-modal-category");
+      if (catEl) catEl.textContent = tc.category || "Boundary Probe";
+
+      const descEl = document.getElementById("inspect-modal-desc");
+      if (descEl) descEl.textContent = tc.desc || tc.description || "";
+
+      // Data sections
+      const payloadSec = document.getElementById("inspect-modal-payload-section");
+      const payloadEl = document.getElementById("inspect-modal-payload");
+      const querySec = document.getElementById("inspect-modal-query-section");
+      const queryEl = document.getElementById("inspect-modal-query");
+
+      const hasBody = tc.payload !== null && tc.payload !== undefined;
+      const hasQuery = tc.queryParams && Object.keys(tc.queryParams).length > 0;
+
+      if (hasBody) {
+        payloadSec.style.display = "block";
+        payloadEl.textContent = typeof tc.payload === 'object' ? JSON.stringify(tc.payload, null, 2) : String(tc.payload);
+      } else if (!hasQuery) {
+        payloadSec.style.display = "block";
+        payloadEl.textContent = "// No body payload required for this request (e.g. GET or parameter-only endpoint)";
+      } else {
+        payloadSec.style.display = "none";
+      }
+
+      if (hasQuery) {
+        querySec.style.display = "block";
+        queryEl.textContent = JSON.stringify(tc.queryParams, null, 2);
+      } else {
+        querySec.style.display = "none";
+      }
+
+      // Generate reproduction cURL
+      let targetUrl = tc.endpoint;
+      if (hasQuery) {
+        const qs = new URLSearchParams();
+        Object.entries(tc.queryParams).forEach(([k, v]) => qs.append(k, String(v)));
+        targetUrl += (targetUrl.includes("?") ? "&" : "?") + qs.toString();
+      }
+      const base = window.location.origin || "http://localhost:4000";
+      let curl = `curl -X ${method} "${base}${targetUrl}"`;
+      if (hasBody && !["GET", "HEAD"].includes(method)) {
+        const jsonStr = JSON.stringify(tc.payload).replace(/"/g, '\\"');
+        curl += ` -H "Content-Type: application/json" -d "${jsonStr}"`;
+      }
+      const curlEl = document.getElementById("inspect-modal-curl");
+      if (curlEl) curlEl.textContent = curl;
+
+      modal.classList.add("active");
+    }
+
+    function closeInspectProbeModal() {
+      const modal = document.getElementById("inspect-probe-modal");
+      if (modal) modal.classList.remove("active");
+    }
+
+    function copyInspectPayload() {
+      const el = document.getElementById("inspect-modal-payload");
+      if (el) {
+        navigator.clipboard.writeText(el.textContent);
+        alert("Payload copied to clipboard!");
+      }
+    }
+
+    function copyInspectCurl() {
+      const el = document.getElementById("inspect-modal-curl");
+      if (el) {
+        navigator.clipboard.writeText(el.textContent);
+        alert("cURL command copied to clipboard!");
+      }
     }
 
     function openPytestModal() {
