@@ -9,6 +9,10 @@ Cargo.lock
 *.swp
 *.swo
 
+# Python
+__pycache__/
+*.py[cod]
+
 # Outputs & Temporary Data
 /output/
 /data/
