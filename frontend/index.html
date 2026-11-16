@@ -635,6 +635,35 @@
       display: inline-block;
       animation: spin 1s linear infinite;
     }
+    .ai-strategy-chip {
+      font-size: 0.67rem;
+      font-weight: 500;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+    .ai-strategy-chip:hover {
+      border-color: #a855f7;
+      background: rgba(147, 51, 234, 0.1);
+      color: #a855f7;
+      transform: translateY(-1px);
+    }
+    .ai-field-highlight {
+      animation: field-glow 1.8s ease-out;
+    }
+    @keyframes field-glow {
+      0% { box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.6); border-color: #a855f7 !important; }
+      70% { box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.25); border-color: #a855f7 !important; }
+      100% { box-shadow: none; }
+    }
     .editor-box {
       width: 100%;
       height: 220px;
@@ -1599,6 +1628,37 @@
         <div style="display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--secondary); border: 1px solid var(--border); border-radius: calc(var(--radius) - 4px); font-size: 0.8rem;">
           <span id="custom-modal-route-method" class="badge-method badge-post">POST</span>
           <span id="custom-modal-route-path" style="font-family: var(--font-mono); font-weight: 600;">/api/v1/users</span>
+        </div>
+
+        <!-- AI Natural Language Test Synthesizer -->
+        <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.06), rgba(59, 130, 246, 0.06)); border: 1px solid rgba(147, 51, 234, 0.35); border-radius: calc(var(--radius) - 3px); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="font-size: 0.95rem;">✨</span>
+              <span style="font-size: 0.82rem; font-weight: 700; color: #a855f7;">AI Test Synthesizer</span>
+              <span style="font-size: 0.65rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 0.08rem 0.4rem; border-radius: 3px; border: 1px solid rgba(16, 185, 129, 0.25);">🛡️ WebGPU Sandbox</span>
+            </div>
+            <span id="custom-ai-status" style="font-size: 0.72rem; color: var(--muted-foreground); display: none;"></span>
+          </div>
+
+          <div style="display: flex; gap: 0.4rem;">
+            <input type="text" id="custom-ai-prompt-input" class="kv-input" style="flex: 1; font-size: 0.8rem; background: var(--card);" placeholder="Describe test scenario (e.g. 'Test SQL injection in username', 'Test negative age boundary')..." onkeydown="if(event.key==='Enter'){event.preventDefault();synthesizeCustomProbeWithAi();}">
+            <button type="button" id="custom-ai-synthesize-btn" class="btn btn-outline ai-btn-glow" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; white-space: nowrap;" onclick="synthesizeCustomProbeWithAi()" title="Synthesize test probe fields from instruction using client-side AI">
+              <span id="custom-ai-btn-icon">✨</span>
+              <span id="custom-ai-btn-text">Synthesize</span>
+            </button>
+          </div>
+
+          <!-- 1-Click Strategy Chips -->
+          <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+            <span style="font-size: 0.68rem; color: var(--muted-foreground); font-weight: 600; text-transform: uppercase;">Quick Strategies:</span>
+            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Security: SQL Injection', 'Test SQL injection in')">🛡️ SQLi</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Security: XSS', 'Test XSS scripting tag in')">⚡ XSS</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Boundary: Negative Overflow', 'Test negative boundary underflow in')">📉 Negative Boundary</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Encoding: Unicode / Emojis', 'Test unicode emojis and special chars in')">🔡 Unicode / Emoji</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Security: Privilege Escalation', 'Test unauthorized role escalation to superadmin')">🔒 Role Escalation</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Boundary: Empty / Whitespace', 'Test blank multi-space whitespace in')">🚫 Whitespace</button>
+          </div>
         </div>
 
         <!-- Target Field Selection -->
@@ -3324,11 +3384,367 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       document.querySelector('input[name="custom-val-type"][value="string"]').checked = true;
       onCustomValTypeChange();
 
+      // Reset AI prompt & status
+      const aiPromptInput = document.getElementById("custom-ai-prompt-input");
+      if (aiPromptInput) aiPromptInput.value = "";
+      const aiStatus = document.getElementById("custom-ai-status");
+      if (aiStatus) aiStatus.style.display = "none";
+
       document.getElementById("custom-test-modal").style.display = "flex";
     }
 
     function closeAddCustomTestModal() {
       document.getElementById("custom-test-modal").style.display = "none";
+    }
+
+    // =========================================================================
+    // AI Custom Test Synthesis & Natural Language Probe Generation
+    // Zero Source Code Access • 100% Client-Side WebGPU / WASM Sandbox
+    // =========================================================================
+
+    function applyAiStrategyChip(category, templatePrefix) {
+      const sel = document.getElementById("custom-field-select");
+      const fieldName = (sel && sel.value !== "__custom__" && sel.value) ? sel.value : "payload";
+      const promptInput = document.getElementById("custom-ai-prompt-input");
+      if (promptInput) {
+        if (templatePrefix.endsWith("in")) {
+          promptInput.value = `${templatePrefix} ${fieldName}`;
+        } else {
+          promptInput.value = templatePrefix;
+        }
+        promptInput.focus();
+        synthesizeCustomProbeWithAi();
+      }
+    }
+
+    async function synthesizeCustomProbeWithAi() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      const promptInput = document.getElementById("custom-ai-prompt-input");
+      const instruction = promptInput ? promptInput.value.trim() : "";
+      if (!instruction) {
+        alert("Please enter a test instruction or select a quick strategy chip.");
+        if (promptInput) promptInput.focus();
+        return;
+      }
+
+      const btn = document.getElementById("custom-ai-synthesize-btn");
+      const icon = document.getElementById("custom-ai-btn-icon");
+      const text = document.getElementById("custom-ai-btn-text");
+      const statusEl = document.getElementById("custom-ai-status");
+
+      if (btn) btn.classList.add("generating");
+      if (icon) icon.innerHTML = `<span class="ai-spinner-anim">⚙️</span>`;
+      if (text) text.textContent = "Synthesizing...";
+      if (statusEl) {
+        statusEl.style.display = "inline";
+        statusEl.innerHTML = `<span class="ai-spinner-anim">⚡</span> Analyzing schema & instruction...`;
+      }
+
+      try {
+        const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+        const resolvedSchema = resolveRef(rawSchema);
+
+        let synthesized = null;
+
+        // 1. Try In-Browser Neural WebGPU Inference if pipeline is ready
+        if (aiPipeline) {
+          try {
+            if (statusEl) statusEl.innerHTML = `<span class="ai-spinner-anim">✨</span> WebGPU Neural Synthesis...`;
+            const aiPrompt = buildCustomProbeAiPrompt(op, resolvedSchema, instruction);
+            const messages = [
+              {
+                role: "system",
+                content: "You are an API contract test synthesizer. Return ONLY a single valid JSON object defining a test case. Do not output markdown, explanations, or code fences."
+              },
+              { role: "user", content: aiPrompt }
+            ];
+
+            const output = await aiPipeline(messages, {
+              max_new_tokens: 160,
+              temperature: 0.4,
+              top_p: 0.9
+            });
+
+            const rawText = output[0]?.generated_text?.at(-1)?.content || output[0]?.generated_text;
+            synthesized = extractAndValidateProbeJson(rawText, resolvedSchema);
+          } catch (neuralErr) {
+            console.warn("Neural probe generation error, falling back to heuristic engine:", neuralErr.message);
+          }
+        }
+
+        // 2. Deterministic Heuristic Synthesizer (Instant Zero-Latency Fallback)
+        if (!synthesized) {
+          synthesized = synthesizeProbeWithKeywords(instruction, op, resolvedSchema);
+        }
+
+        // 3. Auto-fill the 7 modal form fields and trigger visual highlight
+        autoFillCustomModalFields(synthesized);
+
+        if (statusEl) {
+          statusEl.innerHTML = `<span style="color:#10b981;font-weight:600;">✅ Auto-filled 7 test fields!</span>`;
+          setTimeout(() => { if (statusEl) statusEl.style.display = "none"; }, 3500);
+        }
+      } catch (err) {
+        console.error("Custom test synthesis error:", err);
+        if (statusEl) {
+          statusEl.innerHTML = `<span style="color:var(--destructive);">Synthesis error, please check input.</span>`;
+        }
+      } finally {
+        if (btn) btn.classList.remove("generating");
+        if (icon) icon.textContent = "✨";
+        if (text) text.textContent = "Synthesize";
+      }
+    }
+
+    function buildCustomProbeAiPrompt(op, schema, instruction) {
+      const method = String(op.method || 'POST').toUpperCase();
+      const path = String(op.path || '/').replace(/[^\w\-\/\.\{\}]/g, '');
+      const pruned = pruneSchemaForAi(schema);
+
+      const cleanInst = String(instruction || '')
+        .replace(/<\|.*?\|>/g, '')
+        .replace(/###/g, '')
+        .slice(0, 150);
+
+      return `Target Endpoint: ${method} ${path}
+OpenAPI Schema Constraints:
+${JSON.stringify(pruned, null, 2)}
+Developer Testing Goal: "${cleanInst}"
+
+Synthesize a single JSON object with these exact keys:
+{
+  "field": "string (target property name)",
+  "location": "body" | "query" | "path" | "header",
+  "category": "string (e.g. Security: SQL Injection, Boundary: Negative Overflow)",
+  "expected": 422 | 400 | 401 | 403 | 200,
+  "desc": "string (clear assertion description)",
+  "valType": "string" | "number" | "boolean" | "json",
+  "value": "string or number or boolean or raw json string to inject"
+}`;
+    }
+
+    function extractAndValidateProbeJson(rawText, schema) {
+      if (!rawText || typeof rawText !== 'string') return null;
+      let clean = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      const firstBrace = clean.indexOf('{');
+      const lastBrace = clean.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        clean = clean.substring(firstBrace, lastBrace + 1);
+      }
+      clean = stripJsonComments(clean);
+
+      try {
+        const obj = JSON.parse(clean);
+        if (obj && typeof obj === 'object') {
+          return {
+            field: String(obj.field || '').trim(),
+            location: ['body', 'query', 'path', 'header'].includes(obj.location) ? obj.location : 'body',
+            category: String(obj.category || 'Custom Boundary').trim(),
+            expected: parseInt(obj.expected, 10) || 422,
+            desc: String(obj.desc || `Test probe for ${obj.field || 'payload'}`).trim(),
+            valType: ['string', 'number', 'boolean', 'json'].includes(obj.valType) ? obj.valType : 'string',
+            value: typeof obj.value === 'object' ? JSON.stringify(obj.value, null, 2) : String(obj.value ?? '')
+          };
+        }
+      } catch (e) {
+        return null;
+      }
+      return null;
+    }
+
+    function synthesizeProbeWithKeywords(instruction, op, schema) {
+      const lower = instruction.toLowerCase();
+      const properties = (schema && schema.properties) ? Object.keys(schema.properties) : [];
+
+      let matchedField = "";
+      for (const p of properties) {
+        if (lower.includes(p.toLowerCase())) {
+          matchedField = p;
+          break;
+        }
+      }
+      if (!matchedField) {
+        const sel = document.getElementById("custom-field-select");
+        matchedField = (sel && sel.value !== "__custom__" && sel.value) ? sel.value : (properties[0] || "username");
+      }
+
+      const propSchema = (schema && schema.properties && schema.properties[matchedField]) ? resolveRef(schema.properties[matchedField]) : {};
+      const isNumeric = propSchema.type === 'integer' || propSchema.type === 'number';
+
+      // 1. SQL Injection
+      if (lower.includes('sql') || lower.includes('sqli') || lower.includes('inject')) {
+        return {
+          field: matchedField,
+          location: 'body',
+          category: 'Security: SQL Injection',
+          expected: 422,
+          desc: `Rejects SQL injection payload in '${matchedField}'`,
+          valType: 'string',
+          value: "admin' OR '1'='1 --"
+        };
+      }
+
+      // 2. XSS / Scripting
+      if (lower.includes('xss') || lower.includes('script') || lower.includes('html') || lower.includes('tag')) {
+        return {
+          field: matchedField,
+          location: 'body',
+          category: 'Security: XSS / Scripting',
+          expected: 422,
+          desc: `Sanitizes or rejects executable script markup in '${matchedField}'`,
+          valType: 'string',
+          value: "<script>alert('specforge')<\\/script>"
+        };
+      }
+
+      // 3. Negative / Underflow
+      if (lower.includes('negative') || lower.includes('underflow') || lower.includes('below') || lower.includes('less than') || lower.includes('subzero')) {
+        const min = propSchema.minimum !== undefined ? propSchema.minimum : 18;
+        const negVal = min > 0 ? (min - 1) : -1;
+        return {
+          field: matchedField,
+          location: 'body',
+          category: 'Boundary: Negative Underflow',
+          expected: 422,
+          desc: `Rejects negative/below-minimum boundary value (${negVal}) for '${matchedField}'`,
+          valType: 'number',
+          value: String(negVal)
+        };
+      }
+
+      // 4. Overflow / Maximum
+      if (lower.includes('overflow') || lower.includes('huge') || lower.includes('large') || lower.includes('maximum') || lower.includes('max')) {
+        const max = propSchema.maximum !== undefined ? propSchema.maximum : 120;
+        const overVal = max + 9999;
+        return {
+          field: matchedField,
+          location: 'body',
+          category: 'Boundary: Numeric Overflow',
+          expected: 422,
+          desc: `Rejects excessive boundary value (${overVal}) exceeding maximum constraint for '${matchedField}'`,
+          valType: 'number',
+          value: String(overVal)
+        };
+      }
+
+      // 5. Unicode / Emojis
+      if (lower.includes('unicode') || lower.includes('emoji') || lower.includes('special') || lower.includes('symbol')) {
+        return {
+          field: matchedField,
+          location: 'body',
+          category: 'Encoding: Unicode / Emojis',
+          expected: 422,
+          desc: `Rejects unsupported multibyte unicode/emojis in '${matchedField}'`,
+          valType: 'string',
+          value: "🚀 User \\u0000 💻"
+        };
+      }
+
+      // 6. Whitespace / Empty
+      if (lower.includes('whitespace') || lower.includes('space') || lower.includes('empty') || lower.includes('blank')) {
+        return {
+          field: matchedField,
+          location: 'body',
+          category: 'Boundary: Empty / Whitespace',
+          expected: 422,
+          desc: `Rejects whitespace-only string for '${matchedField}'`,
+          valType: 'string',
+          value: "     "
+        };
+      }
+
+      // 7. Privilege Escalation / Admin Role
+      if (lower.includes('role') || lower.includes('admin') || lower.includes('privilege') || lower.includes('escalat') || lower.includes('unauthorized')) {
+        return {
+          field: 'role',
+          location: 'body',
+          category: 'Security: Privilege Escalation',
+          expected: 403,
+          desc: `Rejects unauthorized elevation to superadmin privileges`,
+          valType: 'json',
+          value: '{\\n  "role": "superadmin",\\n  "is_admin": true\\n}'
+        };
+      }
+
+      // 8. General Boundary / Default fallback
+      if (isNumeric) {
+        return {
+          field: matchedField,
+          location: 'body',
+          category: 'Custom Boundary: Numeric',
+          expected: 422,
+          desc: `Boundary probe for '${matchedField}'`,
+          valType: 'number',
+          value: "-1"
+        };
+      }
+
+      return {
+        field: matchedField,
+        location: 'body',
+        category: 'Custom Boundary',
+        expected: 422,
+        desc: `Custom probe for '${matchedField}': ${instruction}`,
+        valType: 'string',
+        value: "test_boundary_value_!@#$"
+      };
+    }
+
+    function autoFillCustomModalFields(probeData) {
+      if (!probeData) return;
+
+      const sel = document.getElementById("custom-field-select");
+      const customNameInput = document.getElementById("custom-field-name-input");
+      const locSelect = document.getElementById("custom-field-location");
+      const catInput = document.getElementById("custom-category-input");
+      const statusSelect = document.getElementById("custom-expected-status");
+      const descInput = document.getElementById("custom-desc-input");
+      const valInput = document.getElementById("custom-val-input");
+
+      // Field selection
+      let found = false;
+      if (sel) {
+        for (let i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === probeData.field) {
+            sel.selectedIndex = i;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          sel.value = "__custom__";
+          if (customNameInput) {
+            customNameInput.value = probeData.field;
+            customNameInput.style.display = "block";
+          }
+        } else {
+          if (customNameInput) customNameInput.style.display = "none";
+        }
+      }
+
+      if (locSelect) locSelect.value = probeData.location || "body";
+      if (catInput) catInput.value = probeData.category || "Custom Boundary";
+      if (statusSelect) statusSelect.value = String(probeData.expected || 422);
+      if (descInput) descInput.value = probeData.desc || "";
+
+      // Value Type
+      const valTypeRadio = document.querySelector(`input[name="custom-val-type"][value="${probeData.valType || 'string'}"]`);
+      if (valTypeRadio) {
+        valTypeRadio.checked = true;
+        onCustomValTypeChange();
+      }
+
+      if (valInput) valInput.value = probeData.value || "";
+
+      // Highlight all auto-filled fields with glowing animation
+      const fieldsToHighlight = [sel, customNameInput, locSelect, catInput, statusSelect, descInput, valInput].filter(Boolean);
+      fieldsToHighlight.forEach(el => {
+        el.classList.remove("ai-field-highlight");
+        void el.offsetWidth; // Force reflow
+        el.classList.add("ai-field-highlight");
+      });
     }
 
     function onCustomFieldSelectChange() {
