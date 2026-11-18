@@ -1386,9 +1386,10 @@
                   <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
                     Headers (Global & Route Specific)
                   </span>
-                  <span id="route-gh-status-indicator" class="pill" style="font-size: 0.68rem; padding: 0.1rem 0.45rem; background: rgba(59, 130, 246, 0.12); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.25);">
-                    Global Active
-                  </span>
+                  <div id="headers-tab-global-pill" class="global-header-pill active" onclick="toggleEndpointGlobalHeaders()" title="Click to toggle Global Headers ON/OFF for this endpoint">
+                    <span id="headers-tab-gh-dot" class="gh-dot"></span>
+                    <span id="headers-tab-gh-text">Global Headers: ON</span>
+                  </div>
                 </div>
                 <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addHeaderRow()">
                   + Add Header
@@ -2370,33 +2371,23 @@
 
     function updateEndpointGlobalHeaderBadge() {
       const op = operations[selectedOpIndex];
-      const pill = document.getElementById("endpoint-global-headers-pill");
-      const dot = document.getElementById("endpoint-gh-dot");
-      const text = document.getElementById("endpoint-gh-text");
-      const statusIndicator = document.getElementById("route-gh-status-indicator");
-
-      if (!pill) return;
-
       const isEnabled = isGlobalHeadersEnabledForOp(op);
-      if (isEnabled) {
-        pill.className = "global-header-pill active";
-        if (text) text.textContent = "Global Headers: ON";
-        if (statusIndicator) {
-          statusIndicator.textContent = "Global Active";
-          statusIndicator.style.background = "rgba(59, 130, 246, 0.12)";
-          statusIndicator.style.color = "var(--primary)";
-          statusIndicator.style.borderColor = "rgba(59, 130, 246, 0.25)";
+
+      const syncPill = (pillId, textId) => {
+        const pill = document.getElementById(pillId);
+        const text = document.getElementById(textId);
+        if (!pill) return;
+        if (isEnabled) {
+          pill.className = "global-header-pill active";
+          if (text) text.textContent = "Global Headers: ON";
+        } else {
+          pill.className = "global-header-pill inactive";
+          if (text) text.textContent = "Global Headers: OFF";
         }
-      } else {
-        pill.className = "global-header-pill inactive";
-        if (text) text.textContent = "Global Headers: OFF";
-        if (statusIndicator) {
-          statusIndicator.textContent = "Global OFF for Route";
-          statusIndicator.style.background = "rgba(239, 68, 68, 0.12)";
-          statusIndicator.style.color = "#ef4444";
-          statusIndicator.style.borderColor = "rgba(239, 68, 68, 0.25)";
-        }
-      }
+      };
+
+      syncPill("endpoint-global-headers-pill", "endpoint-gh-text");
+      syncPill("headers-tab-global-pill", "headers-tab-gh-text");
     }
 
     function toggleEndpointGlobalHeaders() {
@@ -3145,7 +3136,7 @@
               <div style="display: flex; align-items: center; gap: 0.4rem;">
                 <span>🌐</span>
                 <span>GLOBAL HEADERS (INHERITED FROM SETTINGS)</span>
-                ${!ghMasterEnabled ? '<span class="pill" style="font-size: 0.62rem; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Disabled For Route</span>' : ''}
+                ${!ghMasterEnabled ? '<span class="pill" style="font-size: 0.62rem; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Disabled For Route</span><button class="btn btn-outline" style="font-size: 0.65rem; padding: 0.08rem 0.4rem; color: #10B981; border-color: rgba(16, 185, 129, 0.4); margin-left: 0.4rem; cursor: pointer;" onclick="toggleEndpointGlobalHeaders()" title="Click to re-enable Global Headers for this route">▶ Enable for Route</button>' : ''}
               </div>
               <a href="javascript:void(0)" onclick="openSettingsView()" style="font-size: 0.7rem; color: var(--link); text-decoration: none;">⚙️ Edit in Settings</a>
             </div>
