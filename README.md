@@ -18,23 +18,27 @@ Add the following block to your existing `docker-compose.dev.yml` (e.g. alongsid
 
 ```yaml
 services:
-  # Your existing backend service (No code changes needed!)
+  # Your existing backend service (FastAPI, Express, Go, etc.)
   api:
     build: .
     ports:
-      - "3000:3000"
+      - "8000:8000"
+    volumes:
+      - .:/app # Mount host code for instant hot-reloading
 
-  # SpecForge Dev Engine (Rust)
+  # SpecForge Dev Engine (Rust) — Zero code modifications required
   specforge:
-    image: specforge/dev:latest
+    image: ghcr.io/specforge-api/specforge-api-dev:latest
     container_name: specforge-dev
+    restart: unless-stopped
     ports:
       - "4000:4000"   # Studio UI & Mock Server
     environment:
-      - SPEC_SOURCE=http://api:3000/openapi.json
-      - TARGET_URL=http://api:3000
-      - EXPORT_TARGET=jest   # or 'pytest'
+      - SPEC_SOURCE=http://api:8000/openapi.json
+      - TARGET_URL=http://api:8000
+      - EXPORT_TARGET=pytest   # or 'jest'
       - FAIL_ON_500=true
+      - THEME=dark
     volumes:
       - ./tests/generated:/output
     depends_on:
@@ -42,6 +46,31 @@ services:
 ```
 
 Open **`http://localhost:4000`** in your browser to access the Studio Web UI!
+
+---
+
+## 🧠 In-Browser WebGPU AI & Natural Language Fuzzing
+
+SpecForge Dev ships with zero-cloud, on-device AI running entirely inside your browser via WebGPU & WebAssembly (`SmolLM2-135M-Instruct`):
+
+1. **✨ 1-Click "AI Randomize" (Request Body Editor):**
+   - Synthesizes realistic, domain-aware payload values (emails, addresses, realistic names, bounded numeric quantities) instead of static dummy values (`"string"`, `0`).
+   - Includes full JSONC (JSON with Comments) code editor with syntax line numbers and `Ctrl + /` comment shortcuts.
+2. **🧪 AI Custom Test Synthesizer:**
+   - Type free-form natural language test scenarios (e.g. *"Test SQL injection vulnerability in username"*, *"Test negative boundary overflow"*) or click strategy chips (`🛡️ SQLi`, `⚡ XSS`, `📉 Negative Boundary`, `🔡 Unicode/Emoji`, `🔒 Role Escalation`, `🚫 Whitespace`).
+   - Auto-fills all 7 custom probe fields with glowing visual feedback.
+3. **🛡️ 100% Client-Side Privacy Sandbox:**
+   - Zero source code access, zero filesystem write access, zero cloud telemetry. Model weights cache in the browser's IndexedDB, keeping the container image ultra-lightweight at **24.5 MB**.
+
+---
+
+## 🔄 Instant Live Hot-Reloading
+
+SpecForge watches your backend's OpenAPI contract in real time:
+- Whenever backend routes or schemas change on the host disk, Docker volume mounts propagate the change to your dev server (`uvicorn --reload`, `nodemon`, etc.).
+- SpecForge's background watcher polls the OpenAPI endpoint every 2 seconds, detects schema diffs, and hot-updates the Studio UI without requiring a browser page refresh.
+
+Check out the full working sample in [sample-fastapi-project](../sample-fastapi-project/README.md).
 
 ---
 
