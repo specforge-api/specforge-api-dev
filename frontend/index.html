@@ -1381,30 +1381,29 @@
 
             <!-- Subpanel 2: Headers -->
             <div id="subpanel-headers" class="sub-panel">
-              <!-- Inherited Global Headers Banner -->
-              <div id="inherited-global-headers-banner" style="margin-bottom: 0.75rem; padding: 0.55rem 0.75rem; border-radius: calc(var(--radius) - 2px); font-size: 0.78rem; border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; overflow: hidden;">
-                  <span style="font-size: 1rem;">🌐</span>
-                  <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    <span style="font-weight: 600; color: var(--primary);">Global Headers Active:</span>
-                    <span id="inherited-gh-list" style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.73rem;">Authorization: Bearer {{token}}</span>
-                  </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Headers (Global & Route Specific)
+                  </span>
+                  <span id="route-gh-status-indicator" class="pill" style="font-size: 0.68rem; padding: 0.1rem 0.45rem; background: rgba(59, 130, 246, 0.12); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.25);">
+                    Global Active
+                  </span>
                 </div>
-                <button class="btn btn-outline" style="font-size: 0.7rem; padding: 0.15rem 0.45rem;" onclick="toggleEndpointGlobalHeaders()" id="inherited-gh-toggle-btn">
-                  Disable for this Route
-                </button>
-              </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
-                  Endpoint Headers (Overrides Global)
-                </span>
                 <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addHeaderRow()">
                   + Add Header
                 </button>
               </div>
-              <table class="kv-table">
-                <thead><tr><th style="width: 28px;"></th><th>Header Name</th><th>Value</th><th style="width: 28px;"></th></tr></thead>
+
+              <table class="kv-table" style="margin-bottom: 0.5rem;">
+                <thead>
+                  <tr>
+                    <th style="width: 32px; text-align: center;">Active</th>
+                    <th style="width: 200px;">Header Name</th>
+                    <th>Value</th>
+                    <th style="width: 32px; text-align: center;"></th>
+                  </tr>
+                </thead>
                 <tbody id="headers-table-body"></tbody>
               </table>
             </div>
@@ -1754,7 +1753,11 @@
                   <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: block; margin-bottom: 0.25rem;">Bearer Token Value</label>
                   <div style="display: flex; gap: 0.5rem;">
                     <input type="text" id="global-auth-bearer-token" class="kv-input" placeholder="Bearer {{token}} or eyJhbGciOi..." oninput="onGlobalAuthInput()">
-                    <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; white-space: nowrap;" onclick="insertEnvIntoAuth('bearer')">+ Insert {{token}}</button>
+                    <button id="btn-insert-bearer-token" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.6rem; white-space: nowrap; transition: all 0.2s ease;" onclick="insertEnvIntoAuth('bearer')">+ Insert {{token}}</button>
+                  </div>
+                  <div id="global-auth-bearer-preview" style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <span>↳ Effective Token:</span>
+                    <span id="global-auth-bearer-preview-val" style="color: var(--primary); font-weight: 500;">Bearer eyJhbGciOi...</span>
                   </div>
                 </div>
 
@@ -1766,9 +1769,16 @@
                       <input type="text" id="global-auth-apikey-name" class="kv-input" value="X-API-Key" oninput="onGlobalAuthInput()">
                     </div>
                     <div>
-                      <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: block; margin-bottom: 0.25rem;">Header Value</label>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground);">Header Value</label>
+                        <button id="btn-insert-apikey-val" class="btn btn-outline" style="font-size: 0.68rem; padding: 0.08rem 0.35rem;" onclick="insertEnvIntoAuth('apikey')">+ Insert {{apiKey}}</button>
+                      </div>
                       <input type="text" id="global-auth-apikey-val" class="kv-input" placeholder="{{apiKey}} or secret_..." oninput="onGlobalAuthInput()">
                     </div>
+                  </div>
+                  <div id="global-auth-apikey-preview" style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <span>↳ Effective Key:</span>
+                    <span id="global-auth-apikey-preview-val" style="color: var(--primary); font-weight: 500;">sk_live_...</span>
                   </div>
                 </div>
 
@@ -2208,6 +2218,17 @@
       localStorage.setItem("specforge_endpoint_gh_overrides_v1", JSON.stringify(endpointGlobalHeaderOverrides));
     }
 
+    // Per-Endpoint Disabled Individual Global Headers (keyed by opKey -> { [headerKeyLower]: true })
+    let endpointDisabledGlobalHeaders = {};
+    try {
+      const savedDisabled = localStorage.getItem("specforge_endpoint_disabled_gh_v1");
+      if (savedDisabled) endpointDisabledGlobalHeaders = JSON.parse(savedDisabled);
+    } catch {}
+
+    function saveEndpointDisabledGlobalHeaders() {
+      localStorage.setItem("specforge_endpoint_disabled_gh_v1", JSON.stringify(endpointDisabledGlobalHeaders));
+    }
+
     function isGlobalHeadersEnabledForOp(op) {
       if (!masterGlobalHeadersEnabled) return false;
       if (!op) return true;
@@ -2218,28 +2239,118 @@
       return true;
     }
 
+    function isIndividualGlobalHeaderEnabledForOp(op, headerKey) {
+      if (!isGlobalHeadersEnabledForOp(op)) return false;
+      if (!op || !headerKey) return true;
+      const opKey = `${(op.method || 'GET').toUpperCase()}:${op.path || op.endpoint || ''}`;
+      const disabledForOp = endpointDisabledGlobalHeaders[opKey];
+      if (disabledForOp && disabledForOp[headerKey.trim().toLowerCase()] === true) {
+        return false;
+      }
+      return true;
+    }
+
+    function toggleIndividualGlobalHeaderForOp(op, headerKey) {
+      if (!op || !headerKey) return;
+      const opKey = `${(op.method || 'GET').toUpperCase()}:${op.path || op.endpoint || ''}`;
+      if (!endpointDisabledGlobalHeaders[opKey]) {
+        endpointDisabledGlobalHeaders[opKey] = {};
+      }
+      const k = headerKey.trim().toLowerCase();
+      if (endpointDisabledGlobalHeaders[opKey][k]) {
+        delete endpointDisabledGlobalHeaders[opKey][k];
+      } else {
+        endpointDisabledGlobalHeaders[opKey][k] = true;
+      }
+      saveEndpointDisabledGlobalHeaders();
+      renderHeadersTable();
+      updateEndpointGlobalHeaderBadge();
+      updateCodeSnippet();
+    }
+
+    function getGlobalHeadersConfigList() {
+      const list = [];
+      if (globalAuth && globalAuth.enabled && globalAuth.type !== 'none') {
+        if (globalAuth.type === 'bearer') {
+          const raw = globalAuth.token || '';
+          list.push({
+            type: 'auth',
+            key: 'Authorization',
+            rawValue: raw,
+            getResolved: () => {
+              const res = resolveEnvVars(raw.trim());
+              return res.toLowerCase().startsWith('bearer ') ? res : `Bearer ${res}`;
+            },
+            description: 'Global Bearer Token'
+          });
+        } else if (globalAuth.type === 'apikey') {
+          const name = (globalAuth.apiKeyName || 'X-API-Key').trim();
+          const raw = globalAuth.apiKeyValue || '';
+          list.push({
+            type: 'auth',
+            key: name,
+            rawValue: raw,
+            getResolved: () => resolveEnvVars(raw),
+            description: 'Global API Key'
+          });
+        } else if (globalAuth.type === 'basic') {
+          const user = globalAuth.basicUsername || '';
+          const pass = globalAuth.basicPassword || '';
+          list.push({
+            type: 'auth',
+            key: 'Authorization',
+            rawValue: `${user}:••••`,
+            getResolved: () => `Basic ${btoa(resolveEnvVars(user) + ':' + resolveEnvVars(pass))}`,
+            description: 'Global Basic Auth'
+          });
+        }
+      }
+
+      // Custom global headers
+      globalHeaders.filter(h => h.enabled && h.key && h.key.trim()).forEach(h => {
+        list.push({
+          type: 'custom',
+          key: h.key.trim(),
+          rawValue: h.value || '',
+          getResolved: () => resolveEnvVars(h.value || ''),
+          description: 'Global Header'
+        });
+      });
+
+      return list;
+    }
+
     function getEffectiveHeadersForOp(op, localHeaders = requestHeaders) {
       const headersObj = {};
       const ghActive = isGlobalHeadersEnabledForOp(op);
 
-      // 1. Add global auth header if active
+      // 1. Add global auth header if active and not individually disabled for this op
       if (ghActive && globalAuth && globalAuth.enabled && globalAuth.type !== 'none') {
-        if (globalAuth.type === 'bearer' && globalAuth.token.trim()) {
-          const rawToken = resolveEnvVars(globalAuth.token.trim());
-          headersObj['Authorization'] = rawToken.toLowerCase().startsWith('bearer ') ? rawToken : `Bearer ${rawToken}`;
-        } else if (globalAuth.type === 'apikey' && globalAuth.apiKeyName.trim() && globalAuth.apiKeyValue.trim()) {
-          headersObj[resolveEnvVars(globalAuth.apiKeyName.trim())] = resolveEnvVars(globalAuth.apiKeyValue.trim());
-        } else if (globalAuth.type === 'basic' && globalAuth.basicUsername.trim()) {
-          const u = resolveEnvVars(globalAuth.basicUsername.trim());
-          const p = resolveEnvVars(globalAuth.basicPassword.trim());
-          headersObj['Authorization'] = `Basic ${btoa(u + ':' + p)}`;
+        let authKey = 'Authorization';
+        if (globalAuth.type === 'apikey' && globalAuth.apiKeyName.trim()) {
+          authKey = resolveEnvVars(globalAuth.apiKeyName.trim());
+        }
+        if (isIndividualGlobalHeaderEnabledForOp(op, authKey)) {
+          if (globalAuth.type === 'bearer' && globalAuth.token.trim()) {
+            const rawToken = resolveEnvVars(globalAuth.token.trim());
+            headersObj['Authorization'] = rawToken.toLowerCase().startsWith('bearer ') ? rawToken : `Bearer ${rawToken}`;
+          } else if (globalAuth.type === 'apikey' && globalAuth.apiKeyName.trim() && globalAuth.apiKeyValue.trim()) {
+            headersObj[authKey] = resolveEnvVars(globalAuth.apiKeyValue.trim());
+          } else if (globalAuth.type === 'basic' && globalAuth.basicUsername.trim()) {
+            const u = resolveEnvVars(globalAuth.basicUsername.trim());
+            const p = resolveEnvVars(globalAuth.basicPassword.trim());
+            headersObj['Authorization'] = `Basic ${btoa(u + ':' + p)}`;
+          }
         }
       }
 
-      // 2. Add custom global headers if active
+      // 2. Add custom global headers if active and not individually disabled
       if (ghActive) {
         globalHeaders.filter(h => h.enabled && h.key.trim()).forEach(h => {
-          headersObj[resolveEnvVars(h.key.trim())] = resolveEnvVars(h.value);
+          const k = resolveEnvVars(h.key.trim());
+          if (isIndividualGlobalHeaderEnabledForOp(op, k)) {
+            headersObj[k] = resolveEnvVars(h.value);
+          }
         });
       }
 
@@ -2262,9 +2373,7 @@
       const pill = document.getElementById("endpoint-global-headers-pill");
       const dot = document.getElementById("endpoint-gh-dot");
       const text = document.getElementById("endpoint-gh-text");
-      const banner = document.getElementById("inherited-global-headers-banner");
-      const bannerList = document.getElementById("inherited-gh-list");
-      const toggleBtn = document.getElementById("inherited-gh-toggle-btn");
+      const statusIndicator = document.getElementById("route-gh-status-indicator");
 
       if (!pill) return;
 
@@ -2272,22 +2381,20 @@
       if (isEnabled) {
         pill.className = "global-header-pill active";
         if (text) text.textContent = "Global Headers: ON";
-        if (banner) banner.style.display = "flex";
-        if (toggleBtn) toggleBtn.textContent = "Disable for this Route";
+        if (statusIndicator) {
+          statusIndicator.textContent = "Global Active";
+          statusIndicator.style.background = "rgba(59, 130, 246, 0.12)";
+          statusIndicator.style.color = "var(--primary)";
+          statusIndicator.style.borderColor = "rgba(59, 130, 246, 0.25)";
+        }
       } else {
         pill.className = "global-header-pill inactive";
         if (text) text.textContent = "Global Headers: OFF";
-        if (banner) banner.style.display = "none";
-        if (toggleBtn) toggleBtn.textContent = "Enable for this Route";
-      }
-
-      if (bannerList && op) {
-        const ghMap = getEffectiveHeadersForOp(op, []);
-        const keys = Object.keys(ghMap);
-        if (keys.length === 0) {
-          bannerList.textContent = "(No global headers currently enabled)";
-        } else {
-          bannerList.textContent = keys.map(k => `${k}: ${k.toLowerCase() === 'authorization' ? 'Bearer •••••' : ghMap[k]}`).join(' · ');
+        if (statusIndicator) {
+          statusIndicator.textContent = "Global OFF for Route";
+          statusIndicator.style.background = "rgba(239, 68, 68, 0.12)";
+          statusIndicator.style.color = "#ef4444";
+          statusIndicator.style.borderColor = "rgba(239, 68, 68, 0.25)";
         }
       }
     }
@@ -2295,11 +2402,12 @@
     function toggleEndpointGlobalHeaders() {
       const op = operations[selectedOpIndex];
       if (!op) return;
-      const opKey = `${op.method.toUpperCase()}:${op.path}`;
+      const opKey = `${(op.method || 'GET').toUpperCase()}:${op.path || op.endpoint || ''}`;
       const current = isGlobalHeadersEnabledForOp(op);
       endpointGlobalHeaderOverrides[opKey] = !current;
       saveEndpointGlobalHeaderOverrides();
       updateEndpointGlobalHeaderBadge();
+      renderHeadersTable();
       updateResolvedUrl();
       updateCodeSnippet();
     }
@@ -2527,15 +2635,94 @@
       if (pass) globalAuth.basicPassword = pass.value;
 
       saveGlobalHeaders();
+      updateGlobalAuthPreviews();
+      renderHeadersTable();
+      updateCodeSnippet();
     }
 
     function insertEnvIntoAuth(scheme) {
       if (scheme === 'bearer') {
         const tokenInput = document.getElementById("global-auth-bearer-token");
+        const btn = document.getElementById("btn-insert-bearer-token");
         if (tokenInput) {
           tokenInput.value = "{{token}}";
           globalAuth.token = "{{token}}";
           saveGlobalHeaders();
+          updateGlobalAuthPreviews();
+          tokenInput.style.borderColor = "#10B981";
+          tokenInput.style.boxShadow = "0 0 0 2px rgba(16, 185, 129, 0.25)";
+          if (btn) {
+            const orig = btn.textContent;
+            btn.textContent = "✓ Inserted {{token}}!";
+            btn.style.borderColor = "#10B981";
+            btn.style.color = "#10B981";
+            setTimeout(() => {
+              btn.textContent = orig;
+              btn.style.borderColor = "";
+              btn.style.color = "";
+              tokenInput.style.borderColor = "";
+              tokenInput.style.boxShadow = "";
+            }, 1500);
+          }
+        }
+      } else if (scheme === 'apikey') {
+        const keyValInput = document.getElementById("global-auth-apikey-val");
+        const btn = document.getElementById("btn-insert-apikey-val");
+        if (keyValInput) {
+          keyValInput.value = "{{apiKey}}";
+          globalAuth.apiKeyValue = "{{apiKey}}";
+          saveGlobalHeaders();
+          updateGlobalAuthPreviews();
+          keyValInput.style.borderColor = "#10B981";
+          keyValInput.style.boxShadow = "0 0 0 2px rgba(16, 185, 129, 0.25)";
+          if (btn) {
+            const orig = btn.textContent;
+            btn.textContent = "✓ Inserted {{apiKey}}!";
+            btn.style.borderColor = "#10B981";
+            btn.style.color = "#10B981";
+            setTimeout(() => {
+              btn.textContent = orig;
+              btn.style.borderColor = "";
+              btn.style.color = "";
+              keyValInput.style.borderColor = "";
+              keyValInput.style.boxShadow = "";
+            }, 1500);
+          }
+        }
+      }
+      renderHeadersTable();
+      updateCodeSnippet();
+    }
+
+    function updateGlobalAuthPreviews() {
+      const bearerPreviewVal = document.getElementById("global-auth-bearer-preview-val");
+      if (bearerPreviewVal) {
+        const raw = (globalAuth.token || '').trim();
+        if (!raw) {
+          bearerPreviewVal.textContent = "(empty)";
+          bearerPreviewVal.style.color = "var(--text-muted)";
+        } else {
+          const resolved = resolveEnvVars(raw);
+          const fullToken = resolved.toLowerCase().startsWith('bearer ') ? resolved : `Bearer ${resolved}`;
+          const displayVal = fullToken.length > 40 ? fullToken.substring(0, 22) + '••••' + fullToken.substring(fullToken.length - 8) : fullToken;
+          bearerPreviewVal.textContent = displayVal;
+          bearerPreviewVal.title = fullToken;
+          bearerPreviewVal.style.color = "var(--primary)";
+        }
+      }
+
+      const apikeyPreviewVal = document.getElementById("global-auth-apikey-preview-val");
+      if (apikeyPreviewVal) {
+        const raw = (globalAuth.apiKeyValue || '').trim();
+        if (!raw) {
+          apikeyPreviewVal.textContent = "(empty)";
+          apikeyPreviewVal.style.color = "var(--text-muted)";
+        } else {
+          const resolved = resolveEnvVars(raw);
+          const displayVal = resolved.length > 32 ? resolved.substring(0, 14) + '••••' + resolved.substring(resolved.length - 6) : resolved;
+          apikeyPreviewVal.textContent = displayVal;
+          apikeyPreviewVal.title = resolved;
+          apikeyPreviewVal.style.color = "var(--primary)";
         }
       }
     }
@@ -2563,6 +2750,8 @@
       if (keyVal && globalAuth.apiKeyValue) keyVal.value = globalAuth.apiKeyValue;
       if (user && globalAuth.basicUsername) user.value = globalAuth.basicUsername;
       if (pass && globalAuth.basicPassword) pass.value = globalAuth.basicPassword;
+
+      updateGlobalAuthPreviews();
     }
 
     function renderSettingsView() {
@@ -2930,27 +3119,143 @@
 
     function renderHeadersTable() {
       const tbody = document.getElementById("headers-table-body");
+      if (!tbody) return;
       tbody.innerHTML = "";
-      document.getElementById("headers-count-badge").textContent = requestHeaders.filter(h => h.enabled).length;
 
-      requestHeaders.forEach((h, idx) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td style="text-align: center;">
-            <input type="checkbox" ${h.enabled ? 'checked' : ''} onchange="toggleHeader(${idx})">
-          </td>
-          <td>
-            <input type="text" class="kv-input" value="${escapeHtml(h.key)}" placeholder="Header Name" oninput="onHeaderChange(${idx}, 'key', this.value)">
-          </td>
-          <td>
-            <input type="text" class="kv-input" value="${escapeHtml(h.value)}" placeholder="Value" oninput="onHeaderChange(${idx}, 'value', this.value)">
-          </td>
-          <td style="text-align: center;">
-            <button class="btn-icon" onclick="removeHeaderRow(${idx})" title="Remove">✕</button>
+      const op = operations[selectedOpIndex];
+      const ghMasterEnabled = isGlobalHeadersEnabledForOp(op);
+      const globalList = getGlobalHeadersConfigList();
+
+      // Find local overrides: which keys are present in local requestHeaders?
+      const localKeysSet = new Set(
+        requestHeaders.filter(h => h.key && h.key.trim()).map(h => h.key.trim().toLowerCase())
+      );
+
+      let activeCount = 0;
+
+      // 1. Render Global Headers Section (if any global headers are configured)
+      if (globalList.length > 0) {
+        const ghSectionTr = document.createElement("tr");
+        ghSectionTr.style.background = "rgba(59, 130, 246, 0.05)";
+        ghSectionTr.style.borderTop = "1px solid rgba(59, 130, 246, 0.2)";
+        ghSectionTr.style.borderBottom = "1px solid rgba(59, 130, 246, 0.2)";
+        ghSectionTr.innerHTML = `
+          <td colspan="4" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; color: var(--primary); letter-spacing: 0.04em;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span>🌐</span>
+                <span>GLOBAL HEADERS (INHERITED FROM SETTINGS)</span>
+                ${!ghMasterEnabled ? '<span class="pill" style="font-size: 0.62rem; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Disabled For Route</span>' : ''}
+              </div>
+              <a href="javascript:void(0)" onclick="openSettingsView()" style="font-size: 0.7rem; color: var(--link); text-decoration: none;">⚙️ Edit in Settings</a>
+            </div>
           </td>
         `;
-        tbody.appendChild(tr);
-      });
+        tbody.appendChild(ghSectionTr);
+
+        globalList.forEach(gh => {
+          const isIndivEnabled = ghMasterEnabled && isIndividualGlobalHeaderEnabledForOp(op, gh.key);
+          const isOverridden = localKeysSet.has(gh.key.toLowerCase());
+
+          if (isIndivEnabled && !isOverridden) {
+            activeCount++;
+          }
+
+          const resolvedVal = gh.getResolved();
+          let displayResolved = resolvedVal;
+          if (gh.key.toLowerCase() === 'authorization' && resolvedVal.startsWith('Bearer ') && resolvedVal.length > 25) {
+            displayResolved = `Bearer ${resolvedVal.substring(7, 15)}••••${resolvedVal.substring(resolvedVal.length - 6)}`;
+          }
+
+          const tr = document.createElement("tr");
+          tr.style.opacity = (ghMasterEnabled && isIndivEnabled && !isOverridden) ? "1" : "0.55";
+          tr.style.transition = "opacity 0.15s ease";
+          tr.className = isOverridden ? "global-header-row overridden" : "global-header-row";
+
+          tr.innerHTML = `
+            <td style="text-align: center; vertical-align: middle;">
+              <input type="checkbox" ${isIndivEnabled ? 'checked' : ''} 
+                ${!ghMasterEnabled ? 'disabled' : ''} 
+                title="${!ghMasterEnabled ? 'Enable Global Headers on route first' : (isIndivEnabled ? 'Uncheck to disable for this route' : 'Check to enable for this route')}"
+                onchange="toggleIndividualGlobalHeaderForOp(operations[selectedOpIndex], '${escapeHtml(gh.key)}')"
+                style="cursor: ${!ghMasterEnabled ? 'not-allowed' : 'pointer'};">
+            </td>
+            <td style="vertical-align: middle;">
+              <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                <span style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; color: var(--foreground);">${escapeHtml(gh.key)}</span>
+                <span class="pill" style="font-size: 0.62rem; padding: 0.05rem 0.35rem; background: rgba(59, 130, 246, 0.12); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.25);">🌐 Global</span>
+                ${isOverridden ? '<span class="pill" style="font-size: 0.62rem; padding: 0.05rem 0.35rem; background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25);" title="A route-specific header overrides this value">⚡ Overridden</span>' : ''}
+              </div>
+            </td>
+            <td style="vertical-align: middle;">
+              <div style="font-family: var(--font-mono); font-size: 0.78rem;">
+                <div style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(gh.rawValue)}</div>
+                <div style="color: var(--primary); font-size: 0.72rem; margin-top: 0.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(resolvedVal)}">↳ ${escapeHtml(displayResolved)}</div>
+              </div>
+            </td>
+            <td style="text-align: center; vertical-align: middle;">
+              <button class="btn-icon" onclick="openSettingsView()" title="Configure Global Headers in Settings" style="font-size: 0.75rem; color: var(--text-muted);">⚙️</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Divider for Route Specific Headers
+        const routeSectionTr = document.createElement("tr");
+        routeSectionTr.style.background = "rgba(255, 255, 255, 0.02)";
+        routeSectionTr.style.borderTop = "1px solid var(--border)";
+        routeSectionTr.style.borderBottom = "1px solid var(--border)";
+        routeSectionTr.innerHTML = `
+          <td colspan="4" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.04em;">
+            ⚡ ROUTE-SPECIFIC HEADERS (OVERRIDES GLOBAL)
+          </td>
+        `;
+        tbody.appendChild(routeSectionTr);
+      }
+
+      // 2. Render Route Headers
+      if (requestHeaders.length === 0) {
+        const emptyTr = document.createElement("tr");
+        emptyTr.innerHTML = `
+          <td colspan="4" style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 0.6rem;">
+            No route-specific headers. Click "+ Add Header" to define route-level overrides or custom headers.
+          </td>
+        `;
+        tbody.appendChild(emptyTr);
+      } else {
+        const globalKeysLower = new Set(globalList.map(g => g.key.toLowerCase()));
+
+        requestHeaders.forEach((h, idx) => {
+          if (h.enabled && h.key && h.key.trim()) {
+            activeCount++;
+          }
+          const isOverriding = h.key && globalKeysLower.has(h.key.trim().toLowerCase());
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td style="text-align: center; vertical-align: middle;">
+              <input type="checkbox" ${h.enabled ? 'checked' : ''} onchange="toggleHeader(${idx})">
+            </td>
+            <td style="vertical-align: middle;">
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <input type="text" class="kv-input" value="${escapeHtml(h.key)}" placeholder="Header Name" oninput="onHeaderChange(${idx}, 'key', this.value)" onchange="renderHeadersTable()" style="flex: 1;">
+                ${isOverriding ? '<span class="pill" style="font-size: 0.62rem; padding: 0.05rem 0.35rem; background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25);" title="Overrides Global Header with same name">⚡ Overrides</span>' : ''}
+              </div>
+            </td>
+            <td style="vertical-align: middle;">
+              <input type="text" class="kv-input" value="${escapeHtml(h.value)}" placeholder="Value (e.g. {{token}})" oninput="onHeaderChange(${idx}, 'value', this.value)">
+            </td>
+            <td style="text-align: center; vertical-align: middle;">
+              <button class="btn-icon" onclick="removeHeaderRow(${idx})" title="Remove">✕</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Update badge count
+      const badge = document.getElementById("headers-count-badge");
+      if (badge) badge.textContent = activeCount;
     }
 
     function addHeaderRow() {
@@ -2967,7 +3272,7 @@
 
     function toggleHeader(idx) {
       requestHeaders[idx].enabled = !requestHeaders[idx].enabled;
-      document.getElementById("headers-count-badge").textContent = requestHeaders.filter(h => h.enabled).length;
+      renderHeadersTable();
       updateCodeSnippet();
     }
 
