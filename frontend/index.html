@@ -537,6 +537,12 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1.5rem;
+      align-items: stretch;
+    }
+    .try-layout > .card {
+      display: flex;
+      flex-direction: column;
+      min-height: 520px;
     }
     /* Code Editor with Line Numbers Gutter */
     .code-editor-wrapper {
@@ -549,6 +555,9 @@
       font-family: var(--font-mono);
       font-size: 0.83rem;
       line-height: 1.5;
+      flex: 1;
+      min-height: 340px;
+      height: 380px;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .code-editor-wrapper:focus-within {
@@ -568,6 +577,8 @@
       line-height: 1.5;
       min-width: 2.2rem;
       overflow: hidden;
+      height: 100%;
+      box-sizing: border-box;
     }
     .code-editor-wrapper .editor-box {
       border: none !important;
@@ -577,11 +588,14 @@
       padding: 0.75rem 0.75rem;
       margin: 0;
       flex: 1;
-      height: 220px;
-      resize: vertical;
+      height: 100% !important;
+      min-height: 100%;
+      resize: none;
       white-space: pre;
       overflow-wrap: normal;
       overflow-x: auto;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
 
     /* AI Randomize & WebGPU Sandbox Elements */
@@ -798,6 +812,7 @@
     }
     .sub-panel { display: none; }
     .sub-panel.active { display: block; }
+    #subpanel-body.active { display: flex; flex-direction: column; flex: 1; }
 
     /* Key-Value Tables (Params & Headers) */
     .kv-table {
@@ -1062,6 +1077,131 @@
     .field-probe-item:hover {
       border-color: var(--primary);
     }
+
+    /* Sidebar Footer & Settings Button */
+    .sidebar-footer {
+      padding: 0.65rem 0.75rem;
+      border-top: 1px solid var(--border);
+      background: var(--sidebar);
+    }
+    .sidebar-settings-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: calc(var(--radius) - 3px);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+    .sidebar-settings-btn:hover {
+      background: var(--secondary);
+      border-color: var(--primary);
+    }
+    .sidebar-settings-btn.active {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.12);
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+
+    /* Environment Variable Chips */
+    .env-chip {
+      font-size: 0.72rem;
+      padding: 0.18rem 0.5rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      background: var(--secondary);
+      color: var(--foreground);
+      font-family: var(--font-mono);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .env-chip:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    /* Per-Endpoint Global Header Pill */
+    .global-header-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.22rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .global-header-pill.active {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #10B981;
+    }
+    .global-header-pill.inactive {
+      background: var(--secondary);
+      border-color: var(--border);
+      color: var(--muted-foreground);
+      opacity: 0.75;
+    }
+    .gh-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .global-header-pill.active .gh-dot {
+      box-shadow: 0 0 6px #10B981;
+    }
+
+    /* Switch Toggle */
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+    .switch-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .switch-toggle .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--muted);
+      border-radius: 20px;
+      transition: .2s;
+      border: 1px solid var(--border);
+    }
+    .switch-toggle .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .2s;
+    }
+    .switch-toggle input:checked + .slider {
+      background-color: var(--primary);
+      border-color: var(--primary);
+    }
+    .switch-toggle input:checked + .slider:before {
+      transform: translateX(16px);
+    }
   </style>
 </head>
 <body>
@@ -1150,6 +1290,16 @@
       <div class="endpoint-list" id="endpoint-list">
         <!-- Rendered via JS -->
       </div>
+      <div class="sidebar-footer">
+        <button class="sidebar-settings-btn" id="sidebar-settings-btn" onclick="openSettingsView()" title="Configure Environment Variables ({{var}}), Global Auth & Headers">
+          <span style="font-size: 1.15rem;">⚙️</span>
+          <div style="flex: 1; text-align: left; line-height: 1.25;">
+            <div style="font-weight: 600; font-size: 0.82rem;">Environment & Settings</div>
+            <div id="sidebar-env-badge" style="font-size: 0.7rem; color: var(--text-muted);">Default Env (3 vars)</div>
+          </div>
+          <span id="sidebar-global-headers-indicator" class="pill" style="font-size: 0.65rem; padding: 0.12rem 0.4rem; background: rgba(59, 130, 246, 0.15); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.3);">Auth ON</span>
+        </button>
+      </div>
     </aside>
 
     <!-- Main Workspace -->
@@ -1172,10 +1322,14 @@
             </div>
           </div>
           
-          <!-- Live Computed URL Preview -->
-          <div class="url-bar">
+          <!-- Live Computed URL Preview & Per-Endpoint Global Header Pill -->
+          <div class="url-bar" style="display: flex; align-items: center; gap: 0.75rem;">
             <span id="url-method" class="badge-method badge-post" style="padding: 0.15rem 0.4rem;">POST</span>
-            <span id="resolved-url" style="color: var(--link); flex: 1; font-weight: 500;">http://localhost:8000/api/v1/users</span>
+            <span id="resolved-url" style="color: var(--link); flex: 1; font-weight: 500; font-family: var(--font-mono); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">http://localhost:8000/api/v1/users</span>
+            <div id="endpoint-global-headers-pill" class="global-header-pill active" onclick="toggleEndpointGlobalHeaders()" title="Click to toggle Global Headers ON/OFF for this endpoint">
+              <span id="endpoint-gh-dot" class="gh-dot"></span>
+              <span id="endpoint-gh-text">Global Headers: ON</span>
+            </div>
           </div>
         </div>
 
@@ -1227,9 +1381,23 @@
 
             <!-- Subpanel 2: Headers -->
             <div id="subpanel-headers" class="sub-panel">
+              <!-- Inherited Global Headers Banner -->
+              <div id="inherited-global-headers-banner" style="margin-bottom: 0.75rem; padding: 0.55rem 0.75rem; border-radius: calc(var(--radius) - 2px); font-size: 0.78rem; border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; overflow: hidden;">
+                  <span style="font-size: 1rem;">🌐</span>
+                  <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <span style="font-weight: 600; color: var(--primary);">Global Headers Active:</span>
+                    <span id="inherited-gh-list" style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.73rem;">Authorization: Bearer {{token}}</span>
+                  </div>
+                </div>
+                <button class="btn btn-outline" style="font-size: 0.7rem; padding: 0.15rem 0.45rem;" onclick="toggleEndpointGlobalHeaders()" id="inherited-gh-toggle-btn">
+                  Disable for this Route
+                </button>
+              </div>
+
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                 <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
-                  Request Headers
+                  Endpoint Headers (Overrides Global)
                 </span>
                 <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addHeaderRow()">
                   + Add Header
@@ -1313,7 +1481,7 @@
 
               <div class="code-editor-wrapper">
                 <div id="body-line-numbers" class="line-numbers"><div>1</div></div>
-                <textarea id="request-body-input" class="editor-box" style="height: 220px;" spellcheck="false" placeholder="{\n  // You can comment out lines with //:\n  &quot;username&quot;: &quot;alice&quot;\n}"></textarea>
+                <textarea id="request-body-input" class="editor-box" spellcheck="false" placeholder="{\n  // You can comment out lines with //:\n  &quot;username&quot;: &quot;alice&quot;\n}"></textarea>
               </div>
             </div>
 
@@ -1337,11 +1505,14 @@
               </div>
             </div>
             
-            <div id="res-view-body">
-              <textarea id="response-viewer" class="editor-box" style="height: 220px;" readonly placeholder="Send a request to inspect output..."></textarea>
+            <div id="res-view-body" style="flex: 1; display: flex; flex-direction: column;">
+              <div class="code-editor-wrapper" style="flex: 1; min-height: 340px; height: 380px;">
+                <div id="res-line-numbers" class="line-numbers"><div>1</div></div>
+                <textarea id="response-viewer" class="editor-box" readonly placeholder="Send a request to inspect output..."></textarea>
+              </div>
             </div>
-            <div id="res-view-headers" style="display: none;">
-              <textarea id="response-headers-viewer" class="editor-box" style="height: 220px;" readonly placeholder="Response headers will appear here..."></textarea>
+            <div id="res-view-headers" style="display: none; flex: 1; flex-direction: column;">
+              <textarea id="response-headers-viewer" class="editor-box" style="flex: 1; min-height: 340px; height: 380px; box-sizing: border-box;" readonly placeholder="Response headers will appear here..."></textarea>
             </div>
 
             <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
@@ -1468,6 +1639,204 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- View 3: Environment Variables & Global Settings -->
+      <div id="view-settings" class="view-panel">
+        <div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+              <span style="font-size: 1.3rem;">⚙️</span>
+              <h2 style="font-size: 1.25rem; font-weight: 700;">Environment Variables & Global Settings</h2>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+              Manage dynamic environment variables (<code>{{variableName}}</code> syntax), universal authentication tokens, and global request headers.
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <button class="btn btn-outline" onclick="switchTab('client')" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem;">
+              <span>←</span> Back to API Client
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 1: Environment Variables -->
+        <div class="card">
+          <div class="card-title">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.1rem;">🌐</span>
+              <span>Environment Variables</span>
+              <span id="env-vars-count-badge" class="pill pill-planned" style="font-size: 0.72rem;">0 active</span>
+            </div>
+            <button class="btn btn-primary" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;" onclick="addEnvVarRow()">
+              + Add Variable
+            </button>
+          </div>
+          
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.4;">
+            Define key-value pairs that automatically interpolate across the UI using <code>{{variableName}}</code>. 
+            Works in the <strong>URL bar</strong>, <strong>Path variables</strong>, <strong>Query parameters</strong>, <strong>Headers</strong>, and <strong>JSON Body</strong>.
+          </p>
+
+          <!-- Quick Add Variable Chips -->
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.85rem;">
+            <span style="font-size: 0.72rem; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase;">Quick Add:</span>
+            <button class="env-chip" onclick="quickAddEnvVar('baseUrl', 'http://localhost:8000')">+ baseUrl</button>
+            <button class="env-chip" onclick="quickAddEnvVar('token', 'eyJhbGciOi...', true)">+ token (secret)</button>
+            <button class="env-chip" onclick="quickAddEnvVar('apiKey', 'sk-test-12345', true)">+ apiKey (secret)</button>
+            <button class="env-chip" onclick="quickAddEnvVar('tenantId', 'acme_corp')">+ tenantId</button>
+            <button class="env-chip" onclick="quickAddEnvVar('userId', 'usr_101')">+ userId</button>
+          </div>
+
+          <!-- Environment Variables Table -->
+          <div style="overflow-x: auto;">
+            <table class="kv-table" style="margin-bottom: 0.5rem;">
+              <thead>
+                <tr>
+                  <th style="width: 38px; text-align: center;">Active</th>
+                  <th style="width: 220px;">Variable Key</th>
+                  <th>Value</th>
+                  <th style="width: 90px; text-align: center;">Secret</th>
+                  <th style="width: 40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="env-vars-table-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 2: Global Headers & Authentication -->
+        <div class="card">
+          <div class="card-title">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.1rem;">🔑</span>
+              <span>Global Headers & Universal Authentication</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <label class="switch-toggle" title="Toggle sending Global Headers across all endpoints">
+                <input type="checkbox" id="master-global-headers-toggle" checked onchange="onMasterGlobalHeadersToggle()">
+                <span class="slider"></span>
+              </label>
+              <span id="master-gh-toggle-label" style="font-size: 0.78rem; font-weight: 600; color: #10B981;">Global Headers ON</span>
+            </div>
+          </div>
+
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">
+            Headers configured here are automatically sent with all manual API requests, AI custom tests, and automated fuzzer probes.
+            Each endpoint has a <strong>[ 🌐 Global Headers ]</strong> toggle in the header bar to bypass credentials when testing 401 scenarios.
+          </p>
+
+          <!-- Authentication Scheme -->
+          <div style="background: var(--background); border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); padding: 1rem; margin-bottom: 1.25rem;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--foreground); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span>🛡️ Authentication Scheme</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; align-items: start;">
+              <div>
+                <select id="global-auth-type-select" class="kv-input" onchange="onGlobalAuthTypeChange()">
+                  <option value="none">No Auth (None)</option>
+                  <option value="bearer" selected>Bearer Token</option>
+                  <option value="apikey">API Key Header</option>
+                  <option value="basic">HTTP Basic Auth</option>
+                </select>
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.35rem;">
+                  Supports <code>{{token}}</code> or raw values.
+                </p>
+              </div>
+
+              <!-- Scheme Details Area -->
+              <div id="global-auth-scheme-details">
+                <!-- Bearer input -->
+                <div id="global-auth-bearer-box" style="display: block;">
+                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: block; margin-bottom: 0.25rem;">Bearer Token Value</label>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="global-auth-bearer-token" class="kv-input" placeholder="Bearer {{token}} or eyJhbGciOi..." oninput="onGlobalAuthInput()">
+                    <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; white-space: nowrap;" onclick="insertEnvIntoAuth('bearer')">+ Insert {{token}}</button>
+                  </div>
+                </div>
+
+                <!-- API Key inputs -->
+                <div id="global-auth-apikey-box" style="display: none;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <div>
+                      <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: block; margin-bottom: 0.25rem;">Header Name</label>
+                      <input type="text" id="global-auth-apikey-name" class="kv-input" value="X-API-Key" oninput="onGlobalAuthInput()">
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: block; margin-bottom: 0.25rem;">Header Value</label>
+                      <input type="text" id="global-auth-apikey-val" class="kv-input" placeholder="{{apiKey}} or secret_..." oninput="onGlobalAuthInput()">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Basic Auth inputs -->
+                <div id="global-auth-basic-box" style="display: none;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <div>
+                      <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: block; margin-bottom: 0.25rem;">Username</label>
+                      <input type="text" id="global-auth-basic-user" class="kv-input" placeholder="admin" oninput="onGlobalAuthInput()">
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: block; margin-bottom: 0.25rem;">Password</label>
+                      <input type="password" id="global-auth-basic-pass" class="kv-input" placeholder="••••••••" oninput="onGlobalAuthInput()">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Global Headers Table -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.8rem; font-weight: 700; color: var(--foreground);">Custom Global Headers</span>
+              <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addGlobalHeaderRow()">
+                + Add Global Header
+              </button>
+            </div>
+            <table class="kv-table">
+              <thead>
+                <tr>
+                  <th style="width: 38px; text-align: center;">Active</th>
+                  <th style="width: 220px;">Header Name</th>
+                  <th>Header Value (supports {{variable}})</th>
+                  <th style="width: 40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="global-headers-table-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 3: Invariants & Fuzzing Defaults -->
+        <div class="card">
+          <div class="card-title">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.1rem;">🛡️</span>
+              <span>Contract Testing Invariants</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem;">Enforce "Zero 500s" Invariant</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Flag any unhandled server crash (500) as critical contract failure</div>
+              </div>
+              <input type="checkbox" id="setting-fail-500" checked onchange="saveGeneralSettings()">
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem;">Live Schema Polling Interval</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Background spec watcher interval (default 2s)</div>
+              </div>
+              <span class="pill pill-pass" style="font-size: 0.75rem;">2 seconds</span>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -1760,6 +2129,470 @@
     let requestHeaders = [];
     let authConfig = { type: 'none', token: '', headerName: 'X-API-Key', headerVal: '' };
 
+    // =========================================================================
+    // Environment Variables Engine ({{variable}} syntax)
+    // =========================================================================
+    const DEFAULT_ENV_VARS = [
+      { id: 'env-1', enabled: true, key: 'baseUrl', value: 'http://localhost:8000', isSecret: false },
+      { id: 'env-2', enabled: true, key: 'token', value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.specforge_dev_token', isSecret: true },
+      { id: 'env-3', enabled: true, key: 'apiKey', value: 'sk_live_specforge_token_987', isSecret: true },
+      { id: 'env-4', enabled: true, key: 'tenantId', value: 'acme_corp', isSecret: false },
+      { id: 'env-5', enabled: true, key: 'userId', value: 'usr_101', isSecret: false }
+    ];
+
+    let envVars = [];
+    try {
+      const savedEnvs = localStorage.getItem("specforge_env_vars_v1");
+      envVars = savedEnvs ? JSON.parse(savedEnvs) : DEFAULT_ENV_VARS;
+    } catch {
+      envVars = DEFAULT_ENV_VARS;
+    }
+
+    function resolveEnvVars(str) {
+      if (typeof str !== 'string' || !str.includes('{{')) return str;
+      return str.replace(/\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}/g, (match, varName) => {
+        const found = envVars.find(v => v.enabled && v.key === varName);
+        return found ? found.value : match;
+      });
+    }
+
+    function saveEnvVars() {
+      localStorage.setItem("specforge_env_vars_v1", JSON.stringify(envVars));
+      renderEnvVarsTable();
+      updateSidebarBadges();
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    // =========================================================================
+    // Global Headers & Universal Authentication System
+    // =========================================================================
+    let masterGlobalHeadersEnabled = true;
+    try {
+      const savedMaster = localStorage.getItem("specforge_master_gh_v1");
+      if (savedMaster !== null) masterGlobalHeadersEnabled = JSON.parse(savedMaster);
+    } catch {}
+
+    const DEFAULT_GLOBAL_AUTH = {
+      enabled: true,
+      type: 'bearer',
+      token: '{{token}}',
+      apiKeyName: 'X-API-Key',
+      apiKeyValue: '{{apiKey}}',
+      basicUsername: 'admin',
+      basicPassword: ''
+    };
+    let globalAuth = DEFAULT_GLOBAL_AUTH;
+    try {
+      const savedAuth = localStorage.getItem("specforge_global_auth_v1");
+      if (savedAuth) globalAuth = { ...DEFAULT_GLOBAL_AUTH, ...JSON.parse(savedAuth) };
+    } catch {}
+
+    const DEFAULT_GLOBAL_HEADERS = [
+      { id: 'gh-1', enabled: true, key: 'X-Tenant-ID', value: '{{tenantId}}' }
+    ];
+    let globalHeaders = DEFAULT_GLOBAL_HEADERS;
+    try {
+      const savedGh = localStorage.getItem("specforge_global_headers_v1");
+      if (savedGh) globalHeaders = JSON.parse(savedGh);
+    } catch {}
+
+    // Per-Endpoint Global Header Overrides (true = enabled, false = disabled)
+    let endpointGlobalHeaderOverrides = {};
+    try {
+      const savedOverrides = localStorage.getItem("specforge_endpoint_gh_overrides_v1");
+      if (savedOverrides) endpointGlobalHeaderOverrides = JSON.parse(savedOverrides);
+    } catch {}
+
+    function saveEndpointGlobalHeaderOverrides() {
+      localStorage.setItem("specforge_endpoint_gh_overrides_v1", JSON.stringify(endpointGlobalHeaderOverrides));
+    }
+
+    function isGlobalHeadersEnabledForOp(op) {
+      if (!masterGlobalHeadersEnabled) return false;
+      if (!op) return true;
+      const opKey = `${(op.method || 'GET').toUpperCase()}:${op.path || op.endpoint || ''}`;
+      if (endpointGlobalHeaderOverrides[opKey] !== undefined) {
+        return endpointGlobalHeaderOverrides[opKey];
+      }
+      return true;
+    }
+
+    function getEffectiveHeadersForOp(op, localHeaders = requestHeaders) {
+      const headersObj = {};
+      const ghActive = isGlobalHeadersEnabledForOp(op);
+
+      // 1. Add global auth header if active
+      if (ghActive && globalAuth && globalAuth.enabled && globalAuth.type !== 'none') {
+        if (globalAuth.type === 'bearer' && globalAuth.token.trim()) {
+          const rawToken = resolveEnvVars(globalAuth.token.trim());
+          headersObj['Authorization'] = rawToken.toLowerCase().startsWith('bearer ') ? rawToken : `Bearer ${rawToken}`;
+        } else if (globalAuth.type === 'apikey' && globalAuth.apiKeyName.trim() && globalAuth.apiKeyValue.trim()) {
+          headersObj[resolveEnvVars(globalAuth.apiKeyName.trim())] = resolveEnvVars(globalAuth.apiKeyValue.trim());
+        } else if (globalAuth.type === 'basic' && globalAuth.basicUsername.trim()) {
+          const u = resolveEnvVars(globalAuth.basicUsername.trim());
+          const p = resolveEnvVars(globalAuth.basicPassword.trim());
+          headersObj['Authorization'] = `Basic ${btoa(u + ':' + p)}`;
+        }
+      }
+
+      // 2. Add custom global headers if active
+      if (ghActive) {
+        globalHeaders.filter(h => h.enabled && h.key.trim()).forEach(h => {
+          headersObj[resolveEnvVars(h.key.trim())] = resolveEnvVars(h.value);
+        });
+      }
+
+      // 3. Merge local endpoint headers (local overrides global for identical key)
+      if (Array.isArray(localHeaders)) {
+        localHeaders.filter(h => h.enabled && h.key.trim()).forEach(h => {
+          headersObj[resolveEnvVars(h.key.trim())] = resolveEnvVars(h.value);
+        });
+      } else if (localHeaders && typeof localHeaders === 'object') {
+        Object.entries(localHeaders).forEach(([k, v]) => {
+          headersObj[resolveEnvVars(k.trim())] = resolveEnvVars(String(v));
+        });
+      }
+
+      return headersObj;
+    }
+
+    function updateEndpointGlobalHeaderBadge() {
+      const op = operations[selectedOpIndex];
+      const pill = document.getElementById("endpoint-global-headers-pill");
+      const dot = document.getElementById("endpoint-gh-dot");
+      const text = document.getElementById("endpoint-gh-text");
+      const banner = document.getElementById("inherited-global-headers-banner");
+      const bannerList = document.getElementById("inherited-gh-list");
+      const toggleBtn = document.getElementById("inherited-gh-toggle-btn");
+
+      if (!pill) return;
+
+      const isEnabled = isGlobalHeadersEnabledForOp(op);
+      if (isEnabled) {
+        pill.className = "global-header-pill active";
+        if (text) text.textContent = "Global Headers: ON";
+        if (banner) banner.style.display = "flex";
+        if (toggleBtn) toggleBtn.textContent = "Disable for this Route";
+      } else {
+        pill.className = "global-header-pill inactive";
+        if (text) text.textContent = "Global Headers: OFF";
+        if (banner) banner.style.display = "none";
+        if (toggleBtn) toggleBtn.textContent = "Enable for this Route";
+      }
+
+      if (bannerList && op) {
+        const ghMap = getEffectiveHeadersForOp(op, []);
+        const keys = Object.keys(ghMap);
+        if (keys.length === 0) {
+          bannerList.textContent = "(No global headers currently enabled)";
+        } else {
+          bannerList.textContent = keys.map(k => `${k}: ${k.toLowerCase() === 'authorization' ? 'Bearer •••••' : ghMap[k]}`).join(' · ');
+        }
+      }
+    }
+
+    function toggleEndpointGlobalHeaders() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      const opKey = `${op.method.toUpperCase()}:${op.path}`;
+      const current = isGlobalHeadersEnabledForOp(op);
+      endpointGlobalHeaderOverrides[opKey] = !current;
+      saveEndpointGlobalHeaderOverrides();
+      updateEndpointGlobalHeaderBadge();
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    function updateSidebarBadges() {
+      const envBadge = document.getElementById("sidebar-env-badge");
+      if (envBadge) {
+        const activeCount = envVars.filter(v => v.enabled).length;
+        envBadge.textContent = `Default Env (${activeCount} vars)`;
+      }
+      const ghIndicator = document.getElementById("sidebar-global-headers-indicator");
+      if (ghIndicator) {
+        if (!masterGlobalHeadersEnabled) {
+          ghIndicator.textContent = "Auth OFF";
+          ghIndicator.style.background = "var(--secondary)";
+          ghIndicator.style.color = "var(--muted-foreground)";
+          ghIndicator.style.borderColor = "var(--border)";
+        } else if (globalAuth.enabled && globalAuth.type !== 'none') {
+          ghIndicator.textContent = globalAuth.type === 'bearer' ? 'Bearer ON' : (globalAuth.type === 'apikey' ? 'API-Key' : 'Basic ON');
+          ghIndicator.style.background = "rgba(16, 185, 129, 0.15)";
+          ghIndicator.style.color = "#10B981";
+          ghIndicator.style.borderColor = "rgba(16, 185, 129, 0.3)";
+        } else {
+          ghIndicator.textContent = "Headers ON";
+          ghIndicator.style.background = "rgba(59, 130, 246, 0.15)";
+          ghIndicator.style.color = "var(--primary)";
+          ghIndicator.style.borderColor = "rgba(59, 130, 246, 0.3)";
+        }
+      }
+      const countBadge = document.getElementById("env-vars-count-badge");
+      if (countBadge) {
+        const activeCount = envVars.filter(v => v.enabled).length;
+        countBadge.textContent = `${activeCount} active`;
+      }
+    }
+
+    function openSettingsView() {
+      switchTab('settings');
+    }
+
+    function renderEnvVarsTable() {
+      const tbody = document.getElementById("env-vars-table-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      if (envVars.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No environment variables defined. Click "+ Add Variable" or a quick chip above!</td></tr>`;
+        return;
+      }
+
+      envVars.forEach((v, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" ${v.enabled ? "checked" : ""} onchange="toggleEnvVarRow(${idx})">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(v.key)}" placeholder="e.g. baseUrl" onchange="updateEnvVar(${idx}, 'key', this.value)" style="font-family: var(--font-mono); font-weight: 600;">
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem; align-items: center;">
+              <input type="${v.isSecret && !v._revealed ? 'password' : 'text'}" class="kv-input" value="${escapeHtml(v.value)}" placeholder="Value or URL" onchange="updateEnvVar(${idx}, 'value', this.value)" style="font-family: var(--font-mono);">
+              ${v.isSecret ? `<button class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.72rem;" onclick="toggleRevealSecret(${idx})" title="${v._revealed ? 'Hide secret' : 'Reveal secret'}">${v._revealed ? '👁️‍🗨️' : '👁️'}</button>` : ''}
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <input type="checkbox" ${v.isSecret ? "checked" : ""} onchange="toggleEnvVarSecret(${idx})" title="Mask value as secret">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-icon" onclick="deleteEnvVarRow(${idx})" title="Delete variable">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addEnvVarRow(key = '', value = '', isSecret = false) {
+      envVars.push({
+        id: 'env-' + Date.now() + Math.random().toString(36).substr(2, 4),
+        enabled: true,
+        key: key || 'var_' + (envVars.length + 1),
+        value: value || '',
+        isSecret: Boolean(isSecret)
+      });
+      saveEnvVars();
+    }
+
+    function quickAddEnvVar(key, defaultVal, isSecret = false) {
+      const existing = envVars.find(v => v.key === key);
+      if (existing) {
+        existing.enabled = true;
+        if (!existing.value) existing.value = defaultVal;
+      } else {
+        envVars.push({
+          id: 'env-' + Date.now(),
+          enabled: true,
+          key,
+          value: defaultVal,
+          isSecret: Boolean(isSecret)
+        });
+      }
+      saveEnvVars();
+    }
+
+    function deleteEnvVarRow(idx) {
+      envVars.splice(idx, 1);
+      saveEnvVars();
+    }
+
+    function toggleEnvVarRow(idx) {
+      envVars[idx].enabled = !envVars[idx].enabled;
+      saveEnvVars();
+    }
+
+    function toggleEnvVarSecret(idx) {
+      envVars[idx].isSecret = !envVars[idx].isSecret;
+      saveEnvVars();
+    }
+
+    function toggleRevealSecret(idx) {
+      envVars[idx]._revealed = !envVars[idx]._revealed;
+      renderEnvVarsTable();
+    }
+
+    function updateEnvVar(idx, field, val) {
+      envVars[idx][field] = val;
+      saveEnvVars();
+    }
+
+    function renderGlobalHeadersTable() {
+      const tbody = document.getElementById("global-headers-table-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      if (globalHeaders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.25rem;">No custom global headers. Click "+ Add Global Header" to add headers sent with all requests.</td></tr>`;
+        return;
+      }
+
+      globalHeaders.forEach((h, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" ${h.enabled ? "checked" : ""} onchange="toggleGlobalHeaderRow(${idx})">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(h.key)}" placeholder="e.g. X-Tenant-ID" onchange="updateGlobalHeader(${idx}, 'key', this.value)" style="font-family: var(--font-mono); font-weight: 600;">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(h.value)}" placeholder="e.g. {{tenantId}}" onchange="updateGlobalHeader(${idx}, 'value', this.value)" style="font-family: var(--font-mono);">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-icon" onclick="deleteGlobalHeaderRow(${idx})" title="Delete header">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addGlobalHeaderRow(key = '', value = '') {
+      globalHeaders.push({
+        id: 'gh-' + Date.now(),
+        enabled: true,
+        key: key || 'X-Custom-Header',
+        value: value || ''
+      });
+      saveGlobalHeaders();
+    }
+
+    function deleteGlobalHeaderRow(idx) {
+      globalHeaders.splice(idx, 1);
+      saveGlobalHeaders();
+    }
+
+    function toggleGlobalHeaderRow(idx) {
+      globalHeaders[idx].enabled = !globalHeaders[idx].enabled;
+      saveGlobalHeaders();
+    }
+
+    function updateGlobalHeader(idx, field, val) {
+      globalHeaders[idx][field] = val;
+      saveGlobalHeaders();
+    }
+
+    function saveGlobalHeaders() {
+      localStorage.setItem("specforge_global_headers_v1", JSON.stringify(globalHeaders));
+      localStorage.setItem("specforge_global_auth_v1", JSON.stringify(globalAuth));
+      localStorage.setItem("specforge_master_gh_v1", JSON.stringify(masterGlobalHeadersEnabled));
+      renderGlobalHeadersTable();
+      updateSidebarBadges();
+      updateEndpointGlobalHeaderBadge();
+      updateResolvedUrl();
+      updateCodeSnippet();
+    }
+
+    function onMasterGlobalHeadersToggle() {
+      const toggle = document.getElementById("master-global-headers-toggle");
+      masterGlobalHeadersEnabled = Boolean(toggle?.checked);
+      const label = document.getElementById("master-gh-toggle-label");
+      if (label) {
+        label.textContent = masterGlobalHeadersEnabled ? "Global Headers ON" : "Global Headers OFF";
+        label.style.color = masterGlobalHeadersEnabled ? "#10B981" : "var(--muted-foreground)";
+      }
+      saveGlobalHeaders();
+    }
+
+    function onGlobalAuthTypeChange() {
+      const select = document.getElementById("global-auth-type-select");
+      globalAuth.type = select ? select.value : 'none';
+      updateGlobalAuthUI();
+      saveGlobalHeaders();
+    }
+
+    function onGlobalAuthInput() {
+      const token = document.getElementById("global-auth-bearer-token");
+      const keyName = document.getElementById("global-auth-apikey-name");
+      const keyVal = document.getElementById("global-auth-apikey-val");
+      const user = document.getElementById("global-auth-basic-user");
+      const pass = document.getElementById("global-auth-basic-pass");
+
+      if (token) globalAuth.token = token.value;
+      if (keyName) globalAuth.apiKeyName = keyName.value;
+      if (keyVal) globalAuth.apiKeyValue = keyVal.value;
+      if (user) globalAuth.basicUsername = user.value;
+      if (pass) globalAuth.basicPassword = pass.value;
+
+      saveGlobalHeaders();
+    }
+
+    function insertEnvIntoAuth(scheme) {
+      if (scheme === 'bearer') {
+        const tokenInput = document.getElementById("global-auth-bearer-token");
+        if (tokenInput) {
+          tokenInput.value = "{{token}}";
+          globalAuth.token = "{{token}}";
+          saveGlobalHeaders();
+        }
+      }
+    }
+
+    function updateGlobalAuthUI() {
+      const select = document.getElementById("global-auth-type-select");
+      if (select) select.value = globalAuth.type || 'none';
+
+      const bearerBox = document.getElementById("global-auth-bearer-box");
+      const apikeyBox = document.getElementById("global-auth-apikey-box");
+      const basicBox = document.getElementById("global-auth-basic-box");
+
+      if (bearerBox) bearerBox.style.display = globalAuth.type === 'bearer' ? 'block' : 'none';
+      if (apikeyBox) apikeyBox.style.display = globalAuth.type === 'apikey' ? 'block' : 'none';
+      if (basicBox) basicBox.style.display = globalAuth.type === 'basic' ? 'block' : 'none';
+
+      const token = document.getElementById("global-auth-bearer-token");
+      const keyName = document.getElementById("global-auth-apikey-name");
+      const keyVal = document.getElementById("global-auth-apikey-val");
+      const user = document.getElementById("global-auth-basic-user");
+      const pass = document.getElementById("global-auth-basic-pass");
+
+      if (token && globalAuth.token !== undefined) token.value = globalAuth.token;
+      if (keyName && globalAuth.apiKeyName) keyName.value = globalAuth.apiKeyName;
+      if (keyVal && globalAuth.apiKeyValue) keyVal.value = globalAuth.apiKeyValue;
+      if (user && globalAuth.basicUsername) user.value = globalAuth.basicUsername;
+      if (pass && globalAuth.basicPassword) pass.value = globalAuth.basicPassword;
+    }
+
+    function renderSettingsView() {
+      renderEnvVarsTable();
+      renderGlobalHeadersTable();
+      updateGlobalAuthUI();
+      const masterToggle = document.getElementById("master-global-headers-toggle");
+      if (masterToggle) masterToggle.checked = masterGlobalHeadersEnabled;
+      const label = document.getElementById("master-gh-toggle-label");
+      if (label) {
+        label.textContent = masterGlobalHeadersEnabled ? "Global Headers ON" : "Global Headers OFF";
+        label.style.color = masterGlobalHeadersEnabled ? "#10B981" : "var(--muted-foreground)";
+      }
+      const fail500Box = document.getElementById("setting-fail-500");
+      if (fail500Box) {
+        try {
+          const saved = localStorage.getItem("specforge_fail_on_500");
+          if (saved !== null) fail500Box.checked = JSON.parse(saved);
+        } catch {}
+      }
+      updateSidebarBadges();
+    }
+
+    function saveGeneralSettings() {
+      const checkbox = document.getElementById("setting-fail-500");
+      if (checkbox) {
+        localStorage.setItem("specforge_fail_on_500", JSON.stringify(checkbox.checked));
+      }
+    }
+
     const config = window.__SPECFORGE_CONFIG__ || {
       title: "SpecForge API Studio",
       spec_url: "/openapi.json",
@@ -1825,6 +2658,9 @@
       selectTheme(currentTheme);
       if (config.title) document.getElementById("app-title").textContent = config.title;
       setupRequestBodyEditor();
+      setupResponseViewer();
+      updateSidebarBadges();
+      renderSettingsView();
       await loadSpecification();
     });
 
@@ -1879,6 +2715,9 @@
     }
 
     function selectOperation(index) {
+      if (document.getElementById("view-settings") && document.getElementById("view-settings").classList.contains("active")) {
+        switchTab('client');
+      }
       selectedOpIndex = index;
       renderEndpointList();
       const op = operations[index];
@@ -1950,6 +2789,7 @@
       renderQueryParamsTable();
       renderHeadersTable();
       updateAuthUI();
+      updateEndpointGlobalHeaderBadge();
 
       // Reset Body & active sub-tab
       resetRequestBody();
@@ -1958,6 +2798,19 @@
       } else {
         switchSubTab('body');
       }
+
+      // Reset Response Inspector
+      const statusBadge = document.getElementById("response-status-badge");
+      if (statusBadge) statusBadge.style.display = "none";
+      const viewer = document.getElementById("response-viewer");
+      if (viewer) {
+        viewer.value = "";
+        updateResponseLineNumbers();
+      }
+      const headersViewer = document.getElementById("response-headers-viewer");
+      if (headersViewer) headersViewer.value = "";
+      const latencyLabel = document.getElementById("response-latency");
+      if (latencyLabel) latencyLabel.textContent = "Latency: -- ms";
 
       updateResolvedUrl();
       updateCodeSnippet();
@@ -1979,11 +2832,11 @@
       if (btn) btn.classList.add("active");
 
       if (resTabName === 'body') {
-        document.getElementById("res-view-body").style.display = "block";
+        document.getElementById("res-view-body").style.display = "flex";
         document.getElementById("res-view-headers").style.display = "none";
       } else {
         document.getElementById("res-view-body").style.display = "none";
-        document.getElementById("res-view-headers").style.display = "block";
+        document.getElementById("res-view-headers").style.display = "flex";
       }
     }
 
@@ -2194,17 +3047,21 @@
       if (!op) return "";
       let path = op.path;
 
-      // Replace path parameters
+      // Replace path parameters with environment-resolved values
       pathParams.forEach(p => {
-        path = path.replace(`{${p.name}}`, encodeURIComponent(p.value || p.name));
+        const val = resolveEnvVars(p.value || p.name);
+        path = path.replace(`{${p.name}}`, encodeURIComponent(val));
       });
 
-      // Append query parameters
+      // Resolve direct environment variables in path
+      path = resolveEnvVars(path);
+
+      // Append query parameters with environment-resolved values
       const activeQ = queryParams.filter(q => q.enabled && q.key.trim());
       if (activeQ.length > 0) {
         const searchParams = new URLSearchParams();
-        activeQ.forEach(q => searchParams.append(q.key.trim(), q.value));
-        path += '?' + searchParams.toString();
+        activeQ.forEach(q => searchParams.append(resolveEnvVars(q.key.trim()), resolveEnvVars(q.value)));
+        path += (path.includes('?') ? '&' : '?') + searchParams.toString();
       }
 
       return path;
@@ -2212,8 +3069,10 @@
 
     function updateResolvedUrl() {
       const path = getResolvedUrl();
-      const host = window.location.origin || "http://localhost:8000";
-      document.getElementById("resolved-url").textContent = `${host}${path}`;
+      const envBase = resolveEnvVars("{{baseUrl}}");
+      const host = (envBase && envBase !== "{{baseUrl}}") ? envBase.replace(/\/+$/, '') : (window.location.origin || "http://localhost:8000");
+      const el = document.getElementById("resolved-url");
+      if (el) el.textContent = `${host}${path}`;
     }
 
     // --- JSON with Comments (JSONC) & Code Block Editor Engine ---
@@ -2390,6 +3249,34 @@
       });
 
       updateBodyLineNumbers();
+    }
+
+    function updateResponseLineNumbers() {
+      const textarea = document.getElementById("response-viewer");
+      const lineNums = document.getElementById("res-line-numbers");
+      if (!textarea || !lineNums) return;
+
+      const lines = (textarea.value || "").split("\n").length;
+      let numsHtml = "";
+      for (let i = 1; i <= Math.max(lines, 1); i++) {
+        numsHtml += `<div>${i}</div>`;
+      }
+      lineNums.innerHTML = numsHtml;
+    }
+    window.__updateResponseLineNumbers = updateResponseLineNumbers;
+
+    function setupResponseViewer() {
+      const textarea = document.getElementById("response-viewer");
+      const lineNums = document.getElementById("res-line-numbers");
+      if (!textarea || !lineNums) return;
+
+      textarea.addEventListener("scroll", () => {
+        lineNums.scrollTop = textarea.scrollTop;
+      });
+      textarea.addEventListener("input", () => {
+        updateResponseLineNumbers();
+      });
+      updateResponseLineNumbers();
     }
 
     function formatRequestBody() {
@@ -2920,18 +3807,16 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       const headersViewer = document.getElementById("response-headers-viewer");
       const latencyLabel = document.getElementById("response-latency");
 
-      // Build Headers Dictionary
-      const headersObj = {};
-      requestHeaders.filter(h => h.enabled && h.key.trim()).forEach(h => {
-        headersObj[h.key.trim()] = h.value;
-      });
+      // Build Headers Dictionary with Global Headers + Local Overrides + Env Var interpolation
+      const headersObj = getEffectiveHeadersForOp(op, requestHeaders);
 
       let payload = null;
       if (['post', 'put', 'patch', 'delete'].includes(op.method) && bodyText.trim()) {
         try {
           const cleaned = stripJsonComments(bodyText);
-          if (cleaned.trim()) {
-            payload = JSON.parse(cleaned);
+          const resolvedBody = resolveEnvVars(cleaned);
+          if (resolvedBody.trim()) {
+            payload = JSON.parse(resolvedBody);
           }
         } catch(e) {
           alert("Invalid JSON body:\n" + e.message);
@@ -2961,6 +3846,10 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         } catch {
           viewer.value = text;
         }
+        updateResponseLineNumbers();
+        const resLineNums = document.getElementById("res-line-numbers");
+        if (resLineNums) resLineNums.scrollTop = 0;
+        viewer.scrollTop = 0;
 
         // Render response headers
         let headerStr = "";
@@ -2970,18 +3859,30 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         headersViewer.value = headerStr || "(No response headers accessible due to CORS or empty)";
       } catch (err) {
         viewer.value = `Network or CORS error: ${err.message}`;
+        updateResponseLineNumbers();
       }
     }
 
     function switchTab(tab) {
       document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
       document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      const sidebarSettingsBtn = document.getElementById("sidebar-settings-btn");
+      if (sidebarSettingsBtn) sidebarSettingsBtn.classList.remove("active");
+
       if (tab === 'client') {
-        document.getElementById("tab-client-btn").classList.add("active");
+        const btn = document.getElementById("tab-client-btn");
+        if (btn) btn.classList.add("active");
         document.getElementById("view-client").classList.add("active");
-      } else {
-        document.getElementById("tab-testing-btn").classList.add("active");
+        updateEndpointGlobalHeaderBadge();
+        updateResolvedUrl();
+      } else if (tab === 'testing') {
+        const btn = document.getElementById("tab-testing-btn");
+        if (btn) btn.classList.add("active");
         document.getElementById("view-testing").classList.add("active");
+      } else if (tab === 'settings') {
+        if (sidebarSettingsBtn) sidebarSettingsBtn.classList.add("active");
+        document.getElementById("view-settings").classList.add("active");
+        renderSettingsView();
       }
     }
 
@@ -4052,22 +4953,27 @@ Synthesize a single JSON object with these exact keys:
       let respText = "";
       try {
         const method = safeHttpMethod(tc.method).toUpperCase();
-        const headers = { ...(tc.headers || {}) };
+        const opProxy = { method: tc.method, path: tc.opPath || tc.endpoint };
+        const headers = getEffectiveHeadersForOp(opProxy, tc.headers || {});
         const hasBody = tc.payload !== null && tc.payload !== undefined && !["GET", "HEAD"].includes(method);
         if (hasBody && !Object.keys(headers).some(k => k.toLowerCase() === "content-type")) {
           headers["Content-Type"] = "application/json";
         }
 
-        let targetUrl = tc.endpoint;
+        let targetUrl = resolveEnvVars(tc.endpoint);
         if (tc.queryParams && Object.keys(tc.queryParams).length > 0) {
           const qs = new URLSearchParams();
-          Object.entries(tc.queryParams).forEach(([k, v]) => qs.append(k, String(v)));
+          Object.entries(tc.queryParams).forEach(([k, v]) => qs.append(resolveEnvVars(k), resolveEnvVars(String(v))));
           targetUrl += (targetUrl.includes("?") ? "&" : "?") + qs.toString();
         }
 
         const opts = { method, headers };
         if (hasBody) {
-          opts.body = JSON.stringify(tc.payload);
+          if (typeof tc.payload === 'string') {
+            opts.body = resolveEnvVars(tc.payload);
+          } else {
+            opts.body = resolveEnvVars(JSON.stringify(tc.payload));
+          }
         }
 
         const res = await fetch(targetUrl, opts);
@@ -4458,56 +5364,54 @@ Synthesize a single JSON object with these exact keys:
     function updateCodeSnippet() {
       const op = operations[selectedOpIndex];
       if (!op) return;
-      const host = window.location.origin || "http://localhost:8000";
+      const envBase = resolveEnvVars("{{baseUrl}}");
+      const host = (envBase && envBase !== "{{baseUrl}}") ? envBase.replace(/\/+$/, '') : (window.location.origin || "http://localhost:8000");
       const resolvedPath = getResolvedUrl();
       const fullUrl = `${host}${resolvedPath}`;
 
-      const activeHeaders = requestHeaders.filter(h => h.enabled && h.key.trim());
+      const effectiveHeaders = getEffectiveHeadersForOp(op, requestHeaders);
       const activeQueries = queryParams.filter(q => q.enabled && q.key.trim());
       const rawBody = document.getElementById("request-body-input").value;
-      const bodyText = stripJsonComments(rawBody).trim();
+      const cleanedBody = stripJsonComments(rawBody).trim();
+      const bodyText = resolveEnvVars(cleanedBody);
       const hasBody = ['post', 'put', 'patch', 'delete'].includes(op.method) && bodyText.length > 0;
 
       let snippet = "";
       if (snippetLang === 'curl') {
         const parts = [`curl -X ${op.method.toUpperCase()} '${fullUrl}'`];
-        activeHeaders.forEach(h => {
-          parts.push(`  -H '${h.key.trim()}: ${h.value.replace(/'/g, "'\\''")}'`);
+        Object.entries(effectiveHeaders).forEach(([k, v]) => {
+          parts.push(`  -H '${k}: ${v.replace(/'/g, "'\\''")}'`);
         });
         if (hasBody) {
           parts.push(`  -d '${bodyText.replace(/'/g, "'\\''")}'`);
         }
         snippet = parts.join(" \\\n");
       } else if (snippetLang === 'httpx') {
-        const headerDict = {};
-        activeHeaders.forEach(h => { headerDict[h.key.trim()] = h.value; });
         const paramDict = {};
-        activeQueries.forEach(q => { paramDict[q.key.trim()] = q.value; });
+        activeQueries.forEach(q => { paramDict[resolveEnvVars(q.key.trim())] = resolveEnvVars(q.value); });
 
         snippet = `import httpx\n\n`;
-        if (Object.keys(headerDict).length > 0) {
-          snippet += `headers = ${JSON.stringify(headerDict, null, 4)}\n`;
+        if (Object.keys(effectiveHeaders).length > 0) {
+          snippet += `headers = ${JSON.stringify(effectiveHeaders, null, 4)}\n`;
         }
         snippet += `with httpx.Client() as client:\n`;
         snippet += `    response = client.${op.method}(\n        "${fullUrl}",\n`;
-        if (Object.keys(headerDict).length > 0) snippet += `        headers=headers,\n`;
+        if (Object.keys(effectiveHeaders).length > 0) snippet += `        headers=headers,\n`;
         if (hasBody) snippet += `        json=${bodyText},\n`;
         snippet += `    )\n    print(response.status_code, response.json())`;
       } else if (snippetLang === 'requests') {
-        const headerDict = {};
-        activeHeaders.forEach(h => { headerDict[h.key.trim()] = h.value; });
-
         snippet = `import requests\n\n`;
-        if (Object.keys(headerDict).length > 0) {
-          snippet += `headers = ${JSON.stringify(headerDict, null, 4)}\n`;
+        if (Object.keys(effectiveHeaders).length > 0) {
+          snippet += `headers = ${JSON.stringify(effectiveHeaders, null, 4)}\n`;
         }
         snippet += `response = requests.${op.method}(\n    "${fullUrl}",\n`;
-        if (Object.keys(headerDict).length > 0) snippet += `    headers=headers,\n`;
+        if (Object.keys(effectiveHeaders).length > 0) snippet += `    headers=headers,\n`;
         if (hasBody) snippet += `    json=${bodyText},\n`;
         snippet += `)\nprint(response.status_code, response.json())`;
       }
 
-      document.getElementById("code-snippet-box").textContent = snippet;
+      const box = document.getElementById("code-snippet-box");
+      if (box) box.textContent = snippet;
     }
 
     function setSnippetLang(lang) {
