@@ -64,6 +64,15 @@ SpecForge Dev ships with zero-cloud, on-device AI running entirely inside your b
 
 ---
 
+## ⚙️ Environment Variables (`{{var}}`) & Global Headers
+
+SpecForge Dev includes a built-in **Settings Page** accessible via the sticky `⚙️ Environment & Settings` button at the bottom of the left navigation sidebar:
+- **`{{variable}}` Syntax Everywhere:** Use dynamic variables across the URL bar, query parameters, request headers, and JSON body.
+- **Universal Authentication:** Configure Bearer tokens, API Keys, and custom global headers (`X-Tenant-ID`, etc.) that persist in `localStorage`.
+- **1-Click Per-Endpoint Toggle:** Each endpoint has a `[ 🌐 Global Headers: ON/OFF ]` badge allowing developers to quickly test unauthenticated 401 scenarios without losing stored tokens.
+
+---
+
 ## 🔄 Instant Live Hot-Reloading
 
 SpecForge watches your backend's OpenAPI contract in real time:
