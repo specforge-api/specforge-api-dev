@@ -1072,10 +1072,36 @@
       border-radius: calc(var(--radius) - 4px);
       padding: 0.6rem 0.85rem;
       font-size: 0.82rem;
-      transition: border-color 0.15s ease;
+      transition: all 0.15s ease;
     }
     .field-probe-item:hover {
       border-color: var(--primary);
+    }
+    .field-probe-item.pinned {
+      border-left: 3px solid #eab308;
+      background: linear-gradient(90deg, rgba(234, 179, 8, 0.06), var(--card));
+    }
+    .btn-pin-probe {
+      font-size: 0.82rem;
+      padding: 0.2rem 0.35rem;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0.55;
+      transition: all 0.15s ease;
+      background: transparent;
+      border: 1px solid transparent;
+      line-height: 1;
+    }
+    .btn-pin-probe:hover {
+      opacity: 1;
+      transform: scale(1.15);
+      border-color: var(--border);
+    }
+    .btn-pin-probe.active {
+      opacity: 1;
+      background: rgba(234, 179, 8, 0.18);
+      border-color: rgba(234, 179, 8, 0.5);
+      color: #eab308;
     }
 
     /* Sidebar Footer & Settings Button */
@@ -1458,10 +1484,16 @@
                   <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="toggleCommentSelection()" title="Toggle // comment for selected line(s) (Ctrl+/)">💬 Comment (Ctrl+/)</button>
                   <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="formatRequestBody()">Prettify JSON</button>
                   <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="resetRequestBody()">Reset Example</button>
-                  <button id="ai-randomize-btn" class="btn btn-outline ai-btn-glow" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="generateAiPayload()" title="Synthesize realistic, diverse schema-compliant JSON via client-side WebGPU AI">
-                    <span id="ai-btn-icon">✨</span>
-                    <span id="ai-btn-text">AI Randomize</span>
-                  </button>
+                  <div style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                    <button id="ai-randomize-btn" class="btn btn-outline ai-btn-glow" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="generateAiPayload()" title="Synthesize realistic, diverse schema-compliant JSON via client-side WebGPU AI">
+                      <span id="ai-btn-icon">✨</span>
+                      <span id="ai-btn-text">AI Randomize</span>
+                      <span id="ai-rules-active-badge" class="pill" style="display: none; font-size: 0.62rem; padding: 0.05rem 0.35rem; margin-left: 0.35rem; background: rgba(147, 51, 234, 0.18); color: #c084fc; border: 1px solid rgba(147, 51, 234, 0.4);">Custom Rules Active</span>
+                    </button>
+                    <button id="btn-open-randomizer-rules" class="btn btn-outline ai-btn-glow" style="font-size: 0.72rem; padding: 0.2rem 0.45rem;" onclick="openAiRandomizerRulesModal()" title="Customize AI prompt, static field overrides, and array rules for this route">
+                      ⚙️
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2013,52 +2045,118 @@
 
   <!-- Custom Field Test Modal -->
   <div id="custom-test-modal" class="modal-overlay">
-    <div class="modal-box" style="width: 600px;">
+    <div class="modal-box" style="width: 720px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 1.1rem;">🧪</span>
-          <h3 style="font-size: 1.05rem; font-weight: 700;">Add Custom Field Test</h3>
+          <span style="font-size: 1.15rem;">🧪</span>
+          <h3 style="font-size: 1.05rem; font-weight: 700;">Custom Field Test Synthesizer</h3>
         </div>
         <button onclick="closeAddCustomTestModal()" class="btn-icon" style="font-size: 1.2rem;">✕</button>
       </div>
-      <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.9rem;">
-        <!-- Active Route Context Banner -->
-        <div style="display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--secondary); border: 1px solid var(--border); border-radius: calc(var(--radius) - 4px); font-size: 0.8rem;">
-          <span id="custom-modal-route-method" class="badge-method badge-post">POST</span>
-          <span id="custom-modal-route-path" style="font-family: var(--font-mono); font-weight: 600;">/api/v1/users</span>
+
+      <!-- Route Context Banner & Subtabs -->
+      <div style="padding: 0.75rem 1.5rem 0; display: flex; flex-direction: column; gap: 0.6rem; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; background: var(--secondary); border: 1px solid var(--border); border-radius: calc(var(--radius) - 4px); font-size: 0.8rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="custom-modal-route-method" class="badge-method badge-post">POST</span>
+            <span id="custom-modal-route-path" style="font-family: var(--font-mono); font-weight: 600;">/api/v1/users</span>
+          </div>
+          <span style="font-size: 0.7rem; color: #10b981; font-weight: 600;">🛡️ Client-Side WebGPU / WASM Sandbox</span>
         </div>
 
-        <!-- AI Natural Language Test Synthesizer -->
-        <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.06), rgba(59, 130, 246, 0.06)); border: 1px solid rgba(147, 51, 234, 0.35); border-radius: calc(var(--radius) - 3px); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span style="font-size: 0.95rem;">✨</span>
-              <span style="font-size: 0.82rem; font-weight: 700; color: #a855f7;">AI Test Synthesizer</span>
-              <span style="font-size: 0.65rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 0.08rem 0.4rem; border-radius: 3px; border: 1px solid rgba(16, 185, 129, 0.25);">🛡️ WebGPU Sandbox</span>
-            </div>
-            <span id="custom-ai-status" style="font-size: 0.72rem; color: var(--muted-foreground); display: none;"></span>
-          </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" id="custom-tab-prompt-btn" class="sub-tab-btn active" onclick="switchCustomTestModalTab('prompt')" style="font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.85rem;">
+            ✨ AI Prompt Generator
+          </button>
+          <button type="button" id="custom-tab-manual-btn" class="sub-tab-btn" onclick="switchCustomTestModalTab('manual')" style="font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.85rem;">
+            🛠️ Manual Single Probe Builder
+          </button>
+        </div>
+      </div>
 
+      <!-- Tab 1: AI Prompt Generator -->
+      <div id="custom-tab-prompt-panel" class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem; padding: 1.25rem 1.5rem;">
+        <!-- Field Selection for Prompt -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 0.75rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; display: block; margin-bottom: 0.3rem;">Target Field</label>
+            <select id="prompt-target-field-select" class="kv-input">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; display: block; margin-bottom: 0.3rem;">Target Location</label>
+            <select id="prompt-target-location-select" class="kv-input">
+              <option value="body">Request Body (JSON)</option>
+              <option value="query">Query Parameter</option>
+              <option value="path">Path Variable</option>
+              <option value="header">Request Header</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Prompt Input -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+            <label style="font-size: 0.78rem; font-weight: 700;">
+              💬 Test Generation Prompt / Natural Language Rule
+            </label>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Synthesizes multiple boundary & edge test cases</span>
+          </div>
           <div style="display: flex; gap: 0.4rem;">
-            <input type="text" id="custom-ai-prompt-input" class="kv-input" style="flex: 1; font-size: 0.8rem; background: var(--card);" placeholder="Describe test scenario (e.g. 'Test SQL injection in username', 'Test negative age boundary')..." onkeydown="if(event.key==='Enter'){event.preventDefault();synthesizeCustomProbeWithAi();}">
-            <button type="button" id="custom-ai-synthesize-btn" class="btn btn-outline ai-btn-glow" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; white-space: nowrap;" onclick="synthesizeCustomProbeWithAi()" title="Synthesize test probe fields from instruction using client-side AI">
-              <span id="custom-ai-btn-icon">✨</span>
-              <span id="custom-ai-btn-text">Synthesize</span>
+            <input type="text" id="prompt-test-instruction-input" class="kv-input" style="flex: 1; font-size: 0.82rem;" placeholder="e.g. 'the field value should be within 20 to 50' or 'enums: [ACTIVE, PENDING]' or 'price cannot be negative'..." onkeydown="if(event.key==='Enter'){event.preventDefault();handleGeneratePromptTests();}">
+            <button type="button" id="btn-generate-prompt-tests" class="btn btn-primary ai-btn-glow" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap;" onclick="handleGeneratePromptTests()">
+              ⚡ Generate Probes
             </button>
           </div>
 
-          <!-- 1-Click Strategy Chips -->
-          <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-            <span style="font-size: 0.68rem; color: var(--muted-foreground); font-weight: 600; text-transform: uppercase;">Quick Strategies:</span>
-            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Security: SQL Injection', 'Test SQL injection in')">🛡️ SQLi</button>
-            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Security: XSS', 'Test XSS scripting tag in')">⚡ XSS</button>
-            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Boundary: Negative Overflow', 'Test negative boundary underflow in')">📉 Negative Boundary</button>
-            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Encoding: Unicode / Emojis', 'Test unicode emojis and special chars in')">🔡 Unicode / Emoji</button>
-            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Security: Privilege Escalation', 'Test unauthorized role escalation to superadmin')">🔒 Role Escalation</button>
-            <button type="button" class="ai-strategy-chip" onclick="applyAiStrategyChip('Boundary: Empty / Whitespace', 'Test blank multi-space whitespace in')">🚫 Whitespace</button>
+          <!-- Quick Template Chips -->
+          <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.45rem;">
+            <span style="font-size: 0.68rem; color: var(--muted-foreground); font-weight: 600; text-transform: uppercase;">Prompt Examples:</span>
+            <button type="button" class="ai-strategy-chip" onclick="applyPromptGeneratorChip('value should be within 20 to 50')">Range 20 to 50</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyPromptGeneratorChip('value should be within 20 to 20')">Exact Range 20 to 20</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyPromptGeneratorChip('it should be any static string value for enums [\'ACTIVE\', \'PENDING\', \'ARCHIVED\']')">Enums [ACTIVE, PENDING]</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyPromptGeneratorChip('field value cannot be negative')">No Negative Values</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyPromptGeneratorChip('field cannot be empty or whitespace')">No Blank / Whitespace</button>
+            <button type="button" class="ai-strategy-chip" onclick="applyPromptGeneratorChip('must be exact static value \'PRODUCTION\'')">Static String Value</button>
           </div>
         </div>
 
+        <!-- Generated Test Cases Preview Table -->
+        <div id="prompt-test-results-container" style="display: none; flex-direction: column; gap: 0.4rem; margin-top: 0.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <label style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground);">
+                Generated Test Cases (<span id="prompt-generated-count">0</span>)
+              </label>
+              <button type="button" class="btn btn-outline" style="font-size: 0.68rem; padding: 0.1rem 0.4rem;" onclick="toggleAllPromptTestSelection()">
+                Toggle All
+              </button>
+            </div>
+            <span id="prompt-selected-count-badge" style="font-size: 0.72rem; color: var(--primary); font-weight: 600;">0 selected</span>
+          </div>
+
+          <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border); border-radius: calc(var(--radius) - 3px);">
+            <table class="kv-table" style="margin: 0; width: 100%;">
+              <thead>
+                <tr>
+                  <th style="width: 32px; text-align: center;"></th>
+                  <th style="width: 170px;">Strategy / Category</th>
+                  <th style="width: 110px;">Probe Value</th>
+                  <th style="width: 80px;">Expected</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody id="prompt-generated-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Manual Single Probe Builder -->
+      <div id="custom-tab-manual-panel" class="modal-body" style="overflow-y: auto; display: none; flex-direction: column; gap: 0.9rem; padding: 1.25rem 1.5rem;">
         <!-- Target Field Selection -->
         <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 0.75rem;">
           <div>
@@ -2137,9 +2235,145 @@
         </div>
       </div>
 
-      <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem;">
+      <!-- Footer Buttons -->
+      <div style="padding: 0.85rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem;">
         <button class="btn btn-outline" onclick="closeAddCustomTestModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveCustomFieldTest()">Save Test Case</button>
+        <button id="btn-add-prompt-probes-suite" class="btn btn-primary" onclick="addSelectedPromptProbesToSuite()" style="display: inline-flex;">
+          + Add Selected Probes to Suite (0)
+        </button>
+        <button id="btn-save-manual-probe" class="btn btn-primary" onclick="saveCustomFieldTest()" style="display: none;">
+          Save Test Case
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: AI Body Randomizer & Custom Rules -->
+  <div id="ai-randomizer-rules-modal" class="modal-overlay">
+    <div class="modal-box" style="width: 700px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.2rem;">✨</span>
+          <h3 style="font-size: 1.05rem; font-weight: 700;">AI Body Randomizer & Custom Rules</h3>
+        </div>
+        <button onclick="closeAiRandomizerRulesModal()" class="btn-icon" style="font-size: 1.2rem;">✕</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem 1.5rem;">
+        <!-- Route Context Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0.85rem; background: var(--secondary); border: 1px solid var(--border); border-radius: calc(var(--radius) - 3px); flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="randomizer-modal-method" class="badge-method badge-post">POST</span>
+            <span id="randomizer-modal-path" style="font-family: var(--font-mono); font-weight: 600; font-size: 0.82rem;">/api/v1/orders</span>
+          </div>
+          <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="randomizer-rules-enabled" checked>
+            <span>Enable Custom Rules for this Route</span>
+          </label>
+        </div>
+
+        <!-- 1. Natural Language Custom Instructions -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--foreground); display: flex; align-items: center; gap: 0.35rem;">
+              <span>💬 Natural Language Instructions / Prompt</span>
+            </label>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Injected into AI synthesis</span>
+          </div>
+          <textarea id="randomizer-custom-prompt" class="editor-box" style="height: 70px; font-size: 0.8rem; padding: 0.5rem;" placeholder="e.g. Always generate corporate emails ending in @acme.com, set role to admin, and keep order prices under 100..."></textarea>
+          <!-- Quick Suggestion Chips -->
+          <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem;">
+            <span style="font-size: 0.68rem; color: var(--muted-foreground); font-weight: 600; text-transform: uppercase;">Quick Prompt:</span>
+            <button type="button" class="ai-strategy-chip" onclick="appendRandomizerPrompt('Emails ending in @acme.org')">+ Acme Email</button>
+            <button type="button" class="ai-strategy-chip" onclick="appendRandomizerPrompt('Include 3 items in items array with unit_price between 10 and 50')">+ 3 Items (10-50 price)</button>
+            <button type="button" class="ai-strategy-chip" onclick="appendRandomizerPrompt('Set role to viewer and age to 30')">+ Role & Age</button>
+          </div>
+        </div>
+
+        <!-- 2. Static Field Overrides -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--foreground);">
+                🔒 Static Field Overrides (Always Applied)
+              </label>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">
+                Force specific fields to exact constant values every time this route is randomized.
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;" onclick="addRandomizerStaticOverrideRow()">
+              + Add Field Override
+            </button>
+          </div>
+
+          <table class="kv-table" style="margin-bottom: 0.3rem;">
+            <thead>
+              <tr>
+                <th style="width: 32px; text-align: center;">Active</th>
+                <th style="width: 190px;">Field Name</th>
+                <th>Static Value</th>
+                <th style="width: 95px;">Type</th>
+                <th style="width: 32px; text-align: center;"></th>
+              </tr>
+            </thead>
+            <tbody id="randomizer-static-overrides-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. Array Sizing Rules -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--foreground);">
+                📦 Array Sizing Rules
+              </label>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">
+                Control the exact number of elements generated for nested array fields.
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;" onclick="addRandomizerArrayRuleRow()">
+              + Add Array Rule
+            </button>
+          </div>
+
+          <table class="kv-table" style="margin-bottom: 0.3rem;">
+            <thead>
+              <tr>
+                <th style="width: 32px; text-align: center;">Active</th>
+                <th style="width: 240px;">Array Field Name</th>
+                <th>Exact Item Count</th>
+                <th style="width: 32px; text-align: center;"></th>
+              </tr>
+            </thead>
+            <tbody id="randomizer-array-rules-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4. Live Test Preview -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground);">
+              Test Preview (Randomized With Active Rules)
+            </label>
+            <button type="button" class="btn btn-outline ai-btn-glow" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;" onclick="testPreviewRandomizerRules()">
+              🧪 Generate Test Preview
+            </button>
+          </div>
+          <pre id="randomizer-preview-box" class="code-box" style="height: 120px; overflow: auto; margin: 0; font-size: 0.75rem;">// Click 'Generate Test Preview' to test your rules...</pre>
+        </div>
+      </div>
+
+      <div style="padding: 0.85rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn btn-outline" style="font-size: 0.75rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="clearCurrentRouteRandomizerRules()">
+          Clear Route Rules
+        </button>
+        <div style="display: flex; gap: 0.6rem;">
+          <button type="button" class="btn btn-outline" onclick="closeAiRandomizerRulesModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveCurrentRouteRandomizerRules()">Save Rules</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3082,6 +3316,7 @@
 
       updateResolvedUrl();
       updateCodeSnippet();
+      updateRandomizerActiveIndicator();
       renderEndpointPlannedTests();
     }
 
@@ -3803,6 +4038,354 @@
       }
     }
 
+    // =========================================================================
+    // AI Request Body Randomizer & Persistent Route Rules
+    // Zero Source Code Access • 100% Client-Side WebGPU / WASM Sandbox
+    // =========================================================================
+
+    function getRouteKey(op) {
+      if (!op) return "";
+      const m = String(op.method || "").toUpperCase();
+      const p = String(op.path || "");
+      return `${m}:${p}`;
+    }
+
+    function getAllRandomizerRules() {
+      try {
+        const raw = getServiceItem("specforge_randomizer_rules_v1");
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        console.error("Failed to load randomizer rules:", e);
+        return {};
+      }
+    }
+
+    function saveAllRandomizerRules(allRules) {
+      try {
+        setServiceItem("specforge_randomizer_rules_v1", JSON.stringify(allRules));
+      } catch (e) {
+        console.error("Failed to save randomizer rules:", e);
+      }
+    }
+
+    function getCurrentRouteRandomizerRules() {
+      const op = operations[selectedOpIndex];
+      if (!op) return { enabled: true, customPrompt: "", staticOverrides: [], arrayRules: [] };
+      const all = getAllRandomizerRules();
+      const key = getRouteKey(op);
+      return all[key] || { enabled: true, customPrompt: "", staticOverrides: [], arrayRules: [] };
+    }
+
+    function updateRandomizerActiveIndicator() {
+      const badge = document.getElementById("ai-rules-active-badge");
+      const btnSettings = document.getElementById("btn-open-randomizer-rules");
+      if (!badge) return;
+      const op = operations[selectedOpIndex];
+      if (!op) {
+        badge.style.display = "none";
+        return;
+      }
+      const rules = getCurrentRouteRandomizerRules();
+      const hasActivePrompt = Boolean(rules.customPrompt && rules.customPrompt.trim());
+      const hasActiveOverrides = Array.isArray(rules.staticOverrides) && rules.staticOverrides.some(r => r && r.active && r.field && r.field.trim());
+      const hasActiveArrays = Array.isArray(rules.arrayRules) && rules.arrayRules.some(a => a && a.active && a.field && a.field.trim());
+      const isActive = rules.enabled !== false && (hasActivePrompt || hasActiveOverrides || hasActiveArrays);
+
+      if (isActive) {
+        badge.style.display = "inline-flex";
+        if (btnSettings) {
+          btnSettings.style.borderColor = "var(--primary)";
+          btnSettings.style.color = "var(--primary)";
+        }
+      } else {
+        badge.style.display = "none";
+        if (btnSettings) {
+          btnSettings.style.borderColor = "";
+          btnSettings.style.color = "";
+        }
+      }
+    }
+
+    function openAiRandomizerRulesModal() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      const methodBadge = document.getElementById("randomizer-modal-method");
+      if (methodBadge) {
+        methodBadge.className = `badge-method badge-${op.method}`;
+        methodBadge.textContent = op.method.toUpperCase();
+      }
+      const pathLabel = document.getElementById("randomizer-modal-path");
+      if (pathLabel) {
+        pathLabel.textContent = op.path;
+      }
+
+      const rules = getCurrentRouteRandomizerRules();
+      const enabledCb = document.getElementById("randomizer-rules-enabled");
+      if (enabledCb) enabledCb.checked = rules.enabled !== false;
+
+      const promptInput = document.getElementById("randomizer-custom-prompt");
+      if (promptInput) promptInput.value = rules.customPrompt || "";
+
+      renderRandomizerStaticOverridesTable(rules.staticOverrides || []);
+      renderRandomizerArrayRulesTable(rules.arrayRules || []);
+
+      const previewBox = document.getElementById("randomizer-preview-box");
+      if (previewBox) previewBox.textContent = "// Click 'Generate Test Preview' to test your rules...";
+
+      const modal = document.getElementById("ai-randomizer-rules-modal");
+      if (modal) modal.style.display = "flex";
+    }
+
+    function closeAiRandomizerRulesModal() {
+      const modal = document.getElementById("ai-randomizer-rules-modal");
+      if (modal) modal.style.display = "none";
+    }
+
+    function appendRandomizerPrompt(text) {
+      const promptInput = document.getElementById("randomizer-custom-prompt");
+      if (!promptInput) return;
+      const current = promptInput.value.trim();
+      if (!current) {
+        promptInput.value = text;
+      } else {
+        promptInput.value = current + ". " + text;
+      }
+      promptInput.focus();
+    }
+
+    function renderRandomizerStaticOverridesTable(overrides) {
+      const tbody = document.getElementById("randomizer-static-overrides-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (!overrides || overrides.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="5" style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 0.6rem;">No field overrides configured yet. Click '+ Add Field Override' to add one.</td></tr>`;
+        return;
+      }
+      overrides.forEach(item => {
+        addRandomizerStaticOverrideRow(item);
+      });
+    }
+
+    function addRandomizerStaticOverrideRow(initial = { field: '', value: '', type: 'string', active: true }) {
+      const tbody = document.getElementById("randomizer-static-overrides-body");
+      if (!tbody) return;
+      const emptyRow = tbody.querySelector(".empty-row");
+      if (emptyRow) emptyRow.remove();
+
+      const tr = document.createElement("tr");
+      tr.className = "randomizer-override-row";
+      tr.innerHTML = `
+        <td style="text-align: center;">
+          <input type="checkbox" class="override-active-cb" ${initial.active !== false ? 'checked' : ''}>
+        </td>
+        <td>
+          <input type="text" class="kv-input override-field-input" placeholder="e.g. status or user.role" value="${escapeHtml(initial.field || '')}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem;">
+        </td>
+        <td>
+          <input type="text" class="kv-input override-value-input" placeholder="Value (e.g. confirmed, 42, true)" value="${escapeHtml(initial.value !== undefined ? String(initial.value) : '')}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem;">
+        </td>
+        <td>
+          <select class="kv-input override-type-select" style="font-size: 0.74rem; padding: 0.2rem 0.3rem;">
+            <option value="string" ${initial.type === 'string' ? 'selected' : ''}>string</option>
+            <option value="number" ${initial.type === 'number' ? 'selected' : ''}>number</option>
+            <option value="boolean" ${initial.type === 'boolean' ? 'selected' : ''}>boolean</option>
+            <option value="json" ${initial.type === 'json' ? 'selected' : ''}>json</option>
+          </select>
+        </td>
+        <td style="text-align: center;">
+          <button type="button" class="btn-icon" onclick="removeRandomizerStaticOverrideRow(this)" style="color: var(--destructive); font-size: 0.85rem;" title="Delete row">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function removeRandomizerStaticOverrideRow(btn) {
+      const tr = btn.closest("tr");
+      if (tr) tr.remove();
+      const tbody = document.getElementById("randomizer-static-overrides-body");
+      if (tbody && tbody.children.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="5" style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 0.6rem;">No field overrides configured yet. Click '+ Add Field Override' to add one.</td></tr>`;
+      }
+    }
+
+    function renderRandomizerArrayRulesTable(arrayRules) {
+      const tbody = document.getElementById("randomizer-array-rules-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (!arrayRules || arrayRules.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="4" style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 0.6rem;">No array sizing rules configured yet. Click '+ Add Array Rule' to add one.</td></tr>`;
+        return;
+      }
+      arrayRules.forEach(rule => {
+        addRandomizerArrayRuleRow(rule);
+      });
+    }
+
+    function addRandomizerArrayRuleRow(initial = { field: '', count: 2, active: true }) {
+      const tbody = document.getElementById("randomizer-array-rules-body");
+      if (!tbody) return;
+      const emptyRow = tbody.querySelector(".empty-row");
+      if (emptyRow) emptyRow.remove();
+
+      const tr = document.createElement("tr");
+      tr.className = "randomizer-array-row";
+      tr.innerHTML = `
+        <td style="text-align: center;">
+          <input type="checkbox" class="array-rule-active-cb" ${initial.active !== false ? 'checked' : ''}>
+        </td>
+        <td>
+          <input type="text" class="kv-input array-rule-field-input" placeholder="e.g. items or orders.line_items" value="${escapeHtml(initial.field || '')}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem;">
+        </td>
+        <td>
+          <input type="number" min="0" max="50" class="kv-input array-rule-count-input" placeholder="2" value="${parseInt(initial.count, 10) || 2}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem; width: 100%;">
+        </td>
+        <td style="text-align: center;">
+          <button type="button" class="btn-icon" onclick="removeRandomizerArrayRuleRow(this)" style="color: var(--destructive); font-size: 0.85rem;" title="Delete row">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function removeRandomizerArrayRuleRow(btn) {
+      const tr = btn.closest("tr");
+      if (tr) tr.remove();
+      const tbody = document.getElementById("randomizer-array-rules-body");
+      if (tbody && tbody.children.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="4" style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 0.6rem;">No array sizing rules configured yet. Click '+ Add Array Rule' to add one.</td></tr>`;
+      }
+    }
+
+    function collectRandomizerModalRules() {
+      const enabled = document.getElementById("randomizer-rules-enabled")?.checked !== false;
+      const customPrompt = document.getElementById("randomizer-custom-prompt")?.value.trim() || "";
+
+      const staticOverrides = [];
+      document.querySelectorAll("#randomizer-static-overrides-body tr.randomizer-override-row").forEach(tr => {
+        const active = tr.querySelector(".override-active-cb")?.checked !== false;
+        const field = tr.querySelector(".override-field-input")?.value.trim();
+        const value = tr.querySelector(".override-value-input")?.value;
+        const type = tr.querySelector(".override-type-select")?.value || "string";
+        if (field) {
+          staticOverrides.push({ field, value, type, active });
+        }
+      });
+
+      const arrayRules = [];
+      document.querySelectorAll("#randomizer-array-rules-body tr.randomizer-array-row").forEach(tr => {
+        const active = tr.querySelector(".array-rule-active-cb")?.checked !== false;
+        const field = tr.querySelector(".array-rule-field-input")?.value.trim();
+        const count = parseInt(tr.querySelector(".array-rule-count-input")?.value, 10) || 2;
+        if (field) {
+          arrayRules.push({ field, count, active });
+        }
+      });
+
+      return { enabled, customPrompt, staticOverrides, arrayRules };
+    }
+
+    function saveCurrentRouteRandomizerRules() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      const key = getRouteKey(op);
+      const rules = collectRandomizerModalRules();
+      const all = getAllRandomizerRules();
+      all[key] = rules;
+      saveAllRandomizerRules(all);
+      updateRandomizerActiveIndicator();
+      closeAiRandomizerRulesModal();
+    }
+
+    function clearCurrentRouteRandomizerRules() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      const key = getRouteKey(op);
+      const all = getAllRandomizerRules();
+      delete all[key];
+      saveAllRandomizerRules(all);
+      updateRandomizerActiveIndicator();
+      closeAiRandomizerRulesModal();
+    }
+
+    function applyRandomizerRulesToPayload(payload, rules) {
+      if (!payload || typeof payload !== 'object' || !rules || rules.enabled === false) {
+        return payload;
+      }
+
+      function setDeepValue(obj, path, val) {
+        if (!obj || typeof obj !== 'object') return;
+        const parts = path.split('.');
+        let curr = obj;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const p = parts[i];
+          if (!curr[p] || typeof curr[p] !== 'object') {
+            curr[p] = {};
+          }
+          curr = curr[p];
+        }
+        curr[parts[parts.length - 1]] = val;
+      }
+
+      // 1. Array sizing rules
+      if (Array.isArray(rules.arrayRules)) {
+        rules.arrayRules.forEach(ar => {
+          if (!ar || !ar.active || !ar.field) return;
+          const targetCount = Math.max(0, parseInt(ar.count, 10) || 1);
+          if (Array.isArray(payload[ar.field])) {
+            const arr = payload[ar.field];
+            if (arr.length < targetCount && arr.length > 0) {
+              while (arr.length < targetCount) {
+                arr.push(JSON.parse(JSON.stringify(arr[0])));
+              }
+            } else if (arr.length > targetCount) {
+              payload[ar.field] = arr.slice(0, targetCount);
+            }
+          }
+        });
+      }
+
+      // 2. Static field overrides
+      if (Array.isArray(rules.staticOverrides)) {
+        rules.staticOverrides.forEach(ov => {
+          if (!ov || !ov.active || !ov.field) return;
+          let val = ov.value;
+          if (ov.type === 'number') {
+            val = Number(ov.value);
+            if (isNaN(val)) val = ov.value;
+          } else if (ov.type === 'boolean') {
+            val = (String(ov.value).toLowerCase() === 'true');
+          } else if (ov.type === 'json') {
+            try {
+              val = JSON.parse(ov.value);
+            } catch (e) {
+              val = ov.value;
+            }
+          }
+          setDeepValue(payload, ov.field, val);
+        });
+      }
+
+      return payload;
+    }
+
+    function testPreviewRandomizerRules() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+      const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      if (!rawSchema) {
+        document.getElementById("randomizer-preview-box").textContent = "// No JSON schema defined for this endpoint.";
+        return;
+      }
+      const resolved = resolveRef(rawSchema);
+      const rules = collectRandomizerModalRules();
+      let sample = generateSmartSemanticMock(resolved);
+      sample = applyRandomizerRulesToPayload(sample, rules);
+      const previewBox = document.getElementById("randomizer-preview-box");
+      if (previewBox) {
+        previewBox.textContent = JSON.stringify(sample, null, 2);
+      }
+    }
+
     // Safe prompt construction: Strictly strips delimiters, tokens, and non-schema data
     function buildSanitizedAiPrompt(op, schema) {
       const method = String(op.method || 'POST').toUpperCase();
@@ -3814,9 +4397,16 @@
 
       const pruned = pruneSchemaForAi(schema);
 
+      const rules = getCurrentRouteRandomizerRules();
+      let customInstructions = "";
+      if (rules && rules.enabled !== false && rules.customPrompt && rules.customPrompt.trim()) {
+        const cleanPrompt = rules.customPrompt.replace(/<\|.*?\|>/g, '').replace(/###/g, '').slice(0, 200);
+        customInstructions = `\nDeveloper Custom Request Requirements: "${cleanPrompt}"\n`;
+      }
+
       return `Target Endpoint: ${method} ${path} (${summary})
 OpenAPI Schema Constraints:
-${JSON.stringify(pruned, null, 2)}
+${JSON.stringify(pruned, null, 2)}${customInstructions}
 
 Synthesize a single realistic JSON request body adhering to this schema with diverse, plausible domain values. Output ONLY the JSON object.`;
     }
@@ -4150,6 +4740,10 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           if (progressBar) progressBar.style.width = "100%";
         }
 
+        // Apply persistent route randomizer rules (custom overrides & array sizing)
+        const currentRules = getCurrentRouteRandomizerRules();
+        payload = applyRandomizerRulesToPayload(payload, currentRules);
+
         // Safely write to DOM textarea ONLY - Zero filesystem or OS access
         if (box) {
           box.value = JSON.stringify(payload, null, 2);
@@ -4164,7 +4758,11 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       } catch (err) {
         console.error("AI Payload Synthesis Error:", err);
         // Fallback safety
-        const fallback = generateSmartSemanticMock(resolved);
+        let fallback = generateSmartSemanticMock(resolved);
+        try {
+          const currentRules = getCurrentRouteRandomizerRules();
+          fallback = applyRandomizerRulesToPayload(fallback, currentRules);
+        } catch {}
         if (box) {
           box.value = JSON.stringify(fallback, null, 2);
           updateBodyLineNumbers();
@@ -4577,6 +5175,23 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       });
     }
 
+    function switchCustomTestModalTab(tabName) {
+      const isPrompt = tabName === 'prompt';
+      const tabPromptBtn = document.getElementById("custom-tab-prompt-btn");
+      const tabManualBtn = document.getElementById("custom-tab-manual-btn");
+      const promptPanel = document.getElementById("custom-tab-prompt-panel");
+      const manualPanel = document.getElementById("custom-tab-manual-panel");
+      const addPromptBtn = document.getElementById("btn-add-prompt-probes-suite");
+      const saveManualBtn = document.getElementById("btn-save-manual-probe");
+
+      if (tabPromptBtn) tabPromptBtn.classList.toggle("active", isPrompt);
+      if (tabManualBtn) tabManualBtn.classList.toggle("active", !isPrompt);
+      if (promptPanel) promptPanel.style.display = isPrompt ? "flex" : "none";
+      if (manualPanel) manualPanel.style.display = isPrompt ? "none" : "flex";
+      if (addPromptBtn) addPromptBtn.style.display = isPrompt ? "inline-flex" : "none";
+      if (saveManualBtn) saveManualBtn.style.display = isPrompt ? "none" : "inline-flex";
+    }
+
     function openAddCustomTestModal(prefilledField) {
       const op = operations[selectedOpIndex];
       if (!op) return;
@@ -4585,82 +5200,102 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       document.getElementById("custom-modal-route-method").textContent = op.method.toUpperCase();
       document.getElementById("custom-modal-route-path").textContent = op.path;
 
-      // Populate field dropdown
-      const sel = document.getElementById("custom-field-select");
-      sel.innerHTML = "";
+      // Populate both field dropdowns (Prompt tab & Manual tab)
+      const selPrompt = document.getElementById("prompt-target-field-select");
+      const selManual = document.getElementById("custom-field-select");
+      if (selPrompt) selPrompt.innerHTML = "";
+      if (selManual) selManual.innerHTML = "";
 
       const schema = op.raw?.requestBody?.content?.['application/json']?.schema;
       const rawParams = op.raw?.parameters || [];
 
-      // Add body fields
-      if (schema && schema.properties) {
-        const bodyOptGroup = document.createElement("optgroup");
-        bodyOptGroup.label = "Body Properties";
-        for (const propName of Object.keys(schema.properties)) {
-          const opt = document.createElement("option");
-          opt.value = propName;
-          opt.textContent = `${propName} (body)`;
-          opt.dataset.location = "body";
-          bodyOptGroup.appendChild(opt);
+      function populateFieldOptions(targetSel) {
+        if (!targetSel) return;
+        // Body fields
+        if (schema && schema.properties) {
+          const bodyOptGroup = document.createElement("optgroup");
+          bodyOptGroup.label = "Body Properties";
+          for (const propName of Object.keys(schema.properties)) {
+            const opt = document.createElement("option");
+            opt.value = propName;
+            opt.textContent = `${propName} (body)`;
+            opt.dataset.location = "body";
+            bodyOptGroup.appendChild(opt);
+          }
+          targetSel.appendChild(bodyOptGroup);
         }
-        sel.appendChild(bodyOptGroup);
+        // Query params
+        const queryParams = rawParams.filter(p => p.in === 'query');
+        if (queryParams.length > 0) {
+          const qOptGroup = document.createElement("optgroup");
+          qOptGroup.label = "Query Parameters";
+          queryParams.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = `?${p.name}`;
+            opt.textContent = `?${p.name} (query)`;
+            opt.dataset.location = "query";
+            qOptGroup.appendChild(opt);
+          });
+          targetSel.appendChild(qOptGroup);
+        }
+        // Path params
+        const pathMatches = op.path.match(/\{([^}]+)\}/g) || [];
+        if (pathMatches.length > 0) {
+          const pOptGroup = document.createElement("optgroup");
+          pOptGroup.label = "Path Variables";
+          pathMatches.forEach(m => {
+            const pName = m.replace(/[{}]/g, '');
+            const opt = document.createElement("option");
+            opt.value = pName;
+            opt.textContent = `{${pName}} (path)`;
+            opt.dataset.location = "path";
+            pOptGroup.appendChild(opt);
+          });
+          targetSel.appendChild(pOptGroup);
+        }
       }
 
-      // Add query params
-      const queryParams = rawParams.filter(p => p.in === 'query');
-      if (queryParams.length > 0) {
-        const qOptGroup = document.createElement("optgroup");
-        qOptGroup.label = "Query Parameters";
-        queryParams.forEach(p => {
-          const opt = document.createElement("option");
-          opt.value = `?${p.name}`;
-          opt.textContent = `?${p.name} (query)`;
-          opt.dataset.location = "query";
-          qOptGroup.appendChild(opt);
-        });
-        sel.appendChild(qOptGroup);
+      populateFieldOptions(selPrompt);
+      populateFieldOptions(selManual);
+
+      if (selManual) {
+        const customOpt = document.createElement("option");
+        customOpt.value = "__custom__";
+        customOpt.textContent = "➕ Enter Custom Field Name...";
+        selManual.appendChild(customOpt);
       }
 
-      // Add path params
-      const pathMatches = op.path.match(/\{([^}]+)\}/g) || [];
-      if (pathMatches.length > 0) {
-        const pOptGroup = document.createElement("optgroup");
-        pOptGroup.label = "Path Variables";
-        pathMatches.forEach(m => {
-          const pName = m.replace(/[{}]/g, '');
-          const opt = document.createElement("option");
-          opt.value = pName;
-          opt.textContent = `{${pName}} (path)`;
-          opt.dataset.location = "path";
-          pOptGroup.appendChild(opt);
-        });
-        sel.appendChild(pOptGroup);
-      }
-
-      // Add custom manual field option
-      const customOpt = document.createElement("option");
-      customOpt.value = "__custom__";
-      customOpt.textContent = "➕ Enter Custom Field Name...";
-      sel.appendChild(customOpt);
-
-      // Pre-select field if passed
+      // Pre-select field
       if (prefilledField) {
-        const existing = [...sel.options].find(o => o.value === prefilledField);
-        if (existing) {
-          sel.value = prefilledField;
-        } else {
-          sel.value = "__custom__";
-          document.getElementById("custom-field-name-input").value = prefilledField;
+        if (selPrompt) {
+          const match = [...selPrompt.options].find(o => o.value === prefilledField);
+          if (match) selPrompt.value = prefilledField;
+        }
+        if (selManual) {
+          const match = [...selManual.options].find(o => o.value === prefilledField);
+          if (match) {
+            selManual.value = prefilledField;
+          } else {
+            selManual.value = "__custom__";
+            document.getElementById("custom-field-name-input").value = prefilledField;
+          }
         }
       } else {
-        if (sel.options.length > 1) {
-          sel.selectedIndex = 0;
-        }
+        if (selPrompt && selPrompt.options.length > 0) selPrompt.selectedIndex = 0;
+        if (selManual && selManual.options.length > 0) selManual.selectedIndex = 0;
       }
 
       onCustomFieldSelectChange();
 
-      // Reset form fields
+      // Reset Tab 1 (Prompt Generator)
+      const promptInput = document.getElementById("prompt-test-instruction-input");
+      if (promptInput) promptInput.value = "";
+      const promptResults = document.getElementById("prompt-test-results-container");
+      if (promptResults) promptResults.style.display = "none";
+      window.__generatedPromptProbes = [];
+      updatePromptSelectedCount();
+
+      // Reset Tab 2 (Manual Builder)
       document.getElementById("custom-category-input").value = "Custom Boundary";
       document.getElementById("custom-expected-status").value = "422";
       document.getElementById("custom-desc-input").value = "";
@@ -4669,17 +5304,402 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       document.querySelector('input[name="custom-val-type"][value="string"]').checked = true;
       onCustomValTypeChange();
 
-      // Reset AI prompt & status
-      const aiPromptInput = document.getElementById("custom-ai-prompt-input");
-      if (aiPromptInput) aiPromptInput.value = "";
-      const aiStatus = document.getElementById("custom-ai-status");
-      if (aiStatus) aiStatus.style.display = "none";
-
+      switchCustomTestModalTab('prompt');
       document.getElementById("custom-test-modal").style.display = "flex";
     }
 
     function closeAddCustomTestModal() {
       document.getElementById("custom-test-modal").style.display = "none";
+    }
+
+    // =========================================================================
+    // Prompt-Driven Multi-Probe Generator (Tab 1)
+    // =========================================================================
+
+    function applyPromptGeneratorChip(template) {
+      const input = document.getElementById("prompt-test-instruction-input");
+      if (input) {
+        input.value = template;
+        input.focus();
+        handleGeneratePromptTests();
+      }
+    }
+
+    function handleGeneratePromptTests() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      const selField = document.getElementById("prompt-target-field-select");
+      const fieldName = (selField && selField.value) ? selField.value : "payload";
+      const selLoc = document.getElementById("prompt-target-location-select");
+      const location = (selLoc && selLoc.value) ? selLoc.value : "body";
+
+      const input = document.getElementById("prompt-test-instruction-input");
+      const prompt = (input ? input.value : "").trim();
+      if (!prompt) {
+        alert("Please enter a test prompt or select a quick example chip.");
+        if (input) input.focus();
+        return;
+      }
+
+      const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      const resolved = resolveRef(rawSchema);
+
+      const probes = synthesizePromptTestCases(prompt, fieldName, location, op, resolved);
+      window.__generatedPromptProbes = probes;
+
+      renderPromptGeneratedProbesTable(probes);
+    }
+
+    function synthesizePromptTestCases(prompt, fieldName, location, op, schema) {
+      const pLower = prompt.toLowerCase();
+      const propSchema = (schema && schema.properties && schema.properties[fieldName]) ? resolveRef(schema.properties[fieldName]) : {};
+      const probes = [];
+
+      // 1. Numeric Range / Bounds (e.g. "within 20 to 50", "between 10 and 20", "20 to 20")
+      const rangeMatch = prompt.match(/(?:within|between|range|from)?\s*(-?\d+(?:\.\d+)?)\s*(?:to|-|and)\s*(-?\d+(?:\.\d+)?)/i);
+      if (rangeMatch) {
+        let min = parseFloat(rangeMatch[1]);
+        let max = parseFloat(rangeMatch[2]);
+        if (min > max) { const tmp = min; min = max; max = tmp; }
+
+        if (min === max) {
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Boundary: Underflow (< ${min})`,
+            valType: 'number',
+            value: String(min - 1),
+            expected: 422,
+            desc: `Rejects value ${min - 1} below required exact value (${min})`,
+            selected: true
+          });
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Boundary: Exact Required (${min})`,
+            valType: 'number',
+            value: String(min),
+            expected: 200,
+            desc: `Accepts required exact boundary value (${min})`,
+            selected: true
+          });
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Boundary: Overflow (> ${max})`,
+            valType: 'number',
+            value: String(max + 1),
+            expected: 422,
+            desc: `Rejects value ${max + 1} exceeding required exact value (${max})`,
+            selected: true
+          });
+        } else {
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Boundary: Below Min (< ${min})`,
+            valType: 'number',
+            value: String(min - 1),
+            expected: 422,
+            desc: `Rejects value ${min - 1} below minimum constraint (${min})`,
+            selected: true
+          });
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Boundary: Exact Min Edge (${min})`,
+            valType: 'number',
+            value: String(min),
+            expected: 200,
+            desc: `Accepts valid lower boundary value (${min})`,
+            selected: true
+          });
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Boundary: Exact Max Edge (${max})`,
+            valType: 'number',
+            value: String(max),
+            expected: 200,
+            desc: `Accepts valid upper boundary value (${max})`,
+            selected: true
+          });
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Boundary: Above Max (> ${max})`,
+            valType: 'number',
+            value: String(max + 1),
+            expected: 422,
+            desc: `Rejects value ${max + 1} exceeding maximum constraint (${max})`,
+            selected: true
+          });
+        }
+        return probes;
+      }
+
+      // 2. Enums (e.g. "enums ['ACTIVE', 'PENDING']", "enum: OPEN, CLOSED")
+      let enumValues = [];
+      const bracketMatch = prompt.match(/\[([^\]]+)\]/);
+      if (bracketMatch) {
+        enumValues = bracketMatch[1].split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+      } else {
+        const enumWordMatch = prompt.match(/(?:enum|enums|values?)\s*[:=]?\s*([A-Za-z0-9_,\s'"]+)/i);
+        if (enumWordMatch) {
+          enumValues = enumWordMatch[1].split(/[\s,]+/).map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+        }
+      }
+
+      if (enumValues.length > 0) {
+        const firstEnum = enumValues[0];
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Enum: Valid Member ('${firstEnum}')`,
+          valType: 'string',
+          value: firstEnum,
+          expected: 200,
+          desc: `Accepts valid enum member '${firstEnum}'`,
+          selected: true
+        });
+        const invalidVal = "INVALID_" + firstEnum.toUpperCase();
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Enum: Disallowed Member`,
+          valType: 'string',
+          value: invalidVal,
+          expected: 422,
+          desc: `Rejects unlisted enum value '${invalidVal}' not in [${enumValues.join(', ')}]`,
+          selected: true
+        });
+        const caseVal = firstEnum === firstEnum.toUpperCase() ? firstEnum.toLowerCase() : firstEnum.toUpperCase();
+        if (caseVal !== firstEnum) {
+          probes.push({
+            field: fieldName,
+            location: location,
+            category: `Enum: Case Casing Mismatch`,
+            valType: 'string',
+            value: caseVal,
+            expected: 422,
+            desc: `Rejects case-mismatched enum '${caseVal}'`,
+            selected: true
+          });
+        }
+        return probes;
+      }
+
+      // 3. Negative / Underflow
+      if (pLower.includes('negative') || pLower.includes('subzero') || pLower.includes('less than 0') || pLower.includes('< 0')) {
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Boundary: Negative Disallowed`,
+          valType: 'number',
+          value: "-1",
+          expected: 422,
+          desc: `Rejects negative value (-1) for '${fieldName}'`,
+          selected: true
+        });
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Boundary: Extreme Negative Underflow`,
+          valType: 'number',
+          value: "-99999",
+          expected: 422,
+          desc: `Rejects extreme negative underflow (-99999) for '${fieldName}'`,
+          selected: true
+        });
+        return probes;
+      }
+
+      // 4. Whitespace / Empty String
+      if (pLower.includes('whitespace') || pLower.includes('empty') || pLower.includes('blank')) {
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Boundary: Empty String`,
+          valType: 'string',
+          value: "",
+          expected: 422,
+          desc: `Rejects empty string ("") for '${fieldName}'`,
+          selected: true
+        });
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Boundary: Whitespace Only`,
+          valType: 'string',
+          value: "     ",
+          expected: 422,
+          desc: `Rejects whitespace-only string for '${fieldName}'`,
+          selected: true
+        });
+        return probes;
+      }
+
+      // 5. Static Value Match (e.g. "static value 'STANDARD'", "should be 'VIP'")
+      const staticMatch = prompt.match(/(?:static string value|static value|exact value|should be|must be|equals)\s*["']?([^"'\s,]+)["']?/i);
+      if (staticMatch) {
+        const val = staticMatch[1];
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Static Value: Required ('${val}')`,
+          valType: 'string',
+          value: val,
+          expected: 200,
+          desc: `Accepts required static value '${val}' for '${fieldName}'`,
+          selected: true
+        });
+        probes.push({
+          field: fieldName,
+          location: location,
+          category: `Static Value: Disallowed Difference`,
+          valType: 'string',
+          value: val + "_mismatch",
+          expected: 422,
+          desc: `Rejects value differing from required static value '${val}'`,
+          selected: true
+        });
+        return probes;
+      }
+
+      // Fallback to keyword synthesizer
+      const single = synthesizeProbeWithKeywords(prompt, op, schema);
+      probes.push({
+        field: single.field || fieldName,
+        location: single.location || location,
+        category: single.category || "Custom Boundary",
+        valType: single.valType || "string",
+        value: single.value || "sample_probe",
+        expected: single.expected || 422,
+        desc: single.desc || `Test probe for '${fieldName}'`,
+        selected: true
+      });
+      return probes;
+    }
+
+    function renderPromptGeneratedProbesTable(probes) {
+      const resultsContainer = document.getElementById("prompt-test-results-container");
+      const tbody = document.getElementById("prompt-generated-tbody");
+      const countEl = document.getElementById("prompt-generated-count");
+      if (!resultsContainer || !tbody) return;
+
+      tbody.innerHTML = "";
+      if (!probes || probes.length === 0) {
+        resultsContainer.style.display = "none";
+        return;
+      }
+
+      resultsContainer.style.display = "flex";
+      if (countEl) countEl.textContent = probes.length;
+
+      probes.forEach((probe, idx) => {
+        const tr = document.createElement("tr");
+        tr.style.cursor = "pointer";
+        tr.onclick = (e) => {
+          if (e.target.tagName !== "INPUT") {
+            togglePromptTestSelection(idx);
+          }
+        };
+
+        const statusPillClass = probe.expected === 200 ? 'pill-pass' : 'pill-leak';
+        const displayVal = probe.valType === 'string' ? JSON.stringify(probe.value) : String(probe.value);
+
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" id="prompt-test-cb-${idx}" ${probe.selected ? 'checked' : ''} onchange="togglePromptTestSelection(${idx})">
+          </td>
+          <td>
+            <strong style="font-size: 0.78rem; color: var(--foreground);">${escapeHtml(probe.category)}</strong>
+          </td>
+          <td>
+            <code style="font-size: 0.74rem; color: var(--link);">${escapeHtml(displayVal)}</code>
+          </td>
+          <td>
+            <span class="pill ${statusPillClass}" style="font-size: 0.68rem; padding: 0.1rem 0.35rem;">${probe.expected}</span>
+          </td>
+          <td style="font-size: 0.74rem; color: var(--muted-foreground);">
+            ${escapeHtml(probe.desc)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updatePromptSelectedCount();
+    }
+
+    function togglePromptTestSelection(idx) {
+      if (window.__generatedPromptProbes && window.__generatedPromptProbes[idx]) {
+        window.__generatedPromptProbes[idx].selected = !window.__generatedPromptProbes[idx].selected;
+        const cb = document.getElementById(`prompt-test-cb-${idx}`);
+        if (cb) cb.checked = window.__generatedPromptProbes[idx].selected;
+        updatePromptSelectedCount();
+      }
+    }
+
+    function toggleAllPromptTestSelection() {
+      if (!window.__generatedPromptProbes || window.__generatedPromptProbes.length === 0) return;
+      const allSelected = window.__generatedPromptProbes.every(p => p.selected);
+      window.__generatedPromptProbes.forEach((p, idx) => {
+        p.selected = !allSelected;
+        const cb = document.getElementById(`prompt-test-cb-${idx}`);
+        if (cb) cb.checked = !allSelected;
+      });
+      updatePromptSelectedCount();
+    }
+
+    function updatePromptSelectedCount() {
+      const selected = (window.__generatedPromptProbes || []).filter(p => p.selected).length;
+      const total = (window.__generatedPromptProbes || []).length;
+      const badge = document.getElementById("prompt-selected-count-badge");
+      if (badge) badge.textContent = `${selected} / ${total} selected`;
+      const addBtn = document.getElementById("btn-add-prompt-probes-suite");
+      if (addBtn) addBtn.textContent = `+ Add Selected Probes to Suite (${selected})`;
+    }
+
+    function addSelectedPromptProbesToSuite() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      const probesToAdd = (window.__generatedPromptProbes || []).filter(p => p.selected);
+      if (probesToAdd.length === 0) {
+        alert("Please select at least one test case probe to add.");
+        return;
+      }
+
+      const existingProbes = getCustomProbesFromStorage();
+
+      probesToAdd.forEach(p => {
+        const customProbe = {
+          id: "cust_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+          opMethod: op.method.toLowerCase(),
+          opPath: op.path,
+          field: p.field,
+          location: p.location,
+          category: p.category,
+          desc: p.desc,
+          valType: p.valType,
+          value: p.value,
+          expected: p.expected,
+          createdAt: Date.now()
+        };
+        existingProbes.unshift(customProbe);
+      });
+
+      saveCustomProbesToStorage(existingProbes);
+      synthesizeTestPlan();
+
+      isEndpointAccordionOpen = true;
+      const body = document.getElementById("endpoint-tests-body");
+      const chevron = document.getElementById("accordion-chevron");
+      if (body) body.style.display = "block";
+      if (chevron) chevron.classList.remove("collapsed");
+
+      closeAddCustomTestModal();
     }
 
     // =========================================================================
@@ -5192,6 +6212,127 @@ Synthesize a single JSON object with these exact keys:
       }
     }
 
+    // =========================================================================
+    // Test Case Pinning System (Persistent per Service)
+    // =========================================================================
+
+    function getProbeId(tc) {
+      if (!tc) return "";
+      if (tc.id) return String(tc.id);
+      const m = String(tc.opMethod || tc.method || 'post').toLowerCase();
+      const p = String(tc.opPath || tc.endpoint || '/');
+      const f = String(tc.field || '');
+      const c = String(tc.category || '');
+      const e = String(tc.expected || '');
+      return `${m}_${p}_${f}_${c}_${e}`;
+    }
+
+    function getPinnedProbesMap() {
+      try {
+        const raw = getServiceItem("specforge_pinned_probes_v1");
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function savePinnedProbesMap(map) {
+      try {
+        setServiceItem("specforge_pinned_probes_v1", JSON.stringify(map));
+      } catch (e) {
+        console.error("Failed to save pinned probes:", e);
+      }
+    }
+
+    function isProbePinned(probeId) {
+      if (!probeId) return false;
+      const map = getPinnedProbesMap();
+      return Boolean(map[probeId]);
+    }
+
+    function togglePinProbe(probeId) {
+      if (!probeId) return;
+      const map = getPinnedProbesMap();
+      if (map[probeId]) {
+        delete map[probeId];
+      } else {
+        map[probeId] = true;
+      }
+      savePinnedProbesMap(map);
+      renderEndpointPlannedTests();
+      renderPlannedTestTable();
+    }
+
+    function createProbeItemElement(tc, globalIndex, isPinnedSection = false) {
+      const probeId = getProbeId(tc);
+      const isPinned = isProbePinned(probeId);
+      const resId = isPinnedSection ? `route-probe-res-pinned-${globalIndex}` : `route-probe-res-${globalIndex}`;
+
+      let valPreview = "";
+      if (tc.queryParams && Object.keys(tc.queryParams).length > 0) {
+        valPreview = JSON.stringify(tc.queryParams);
+      } else if (tc.payload !== null && tc.payload !== undefined && typeof tc.payload === 'object' && tc.field !== '[body_root]') {
+        const targetVal = tc.payload[tc.field];
+        if (targetVal !== undefined) {
+          valPreview = JSON.stringify(targetVal);
+        } else {
+          valPreview = `(Field omitted)`;
+        }
+      } else if (tc.payload !== null && tc.payload !== undefined) {
+        valPreview = JSON.stringify(tc.payload);
+      } else if (tc.field.startsWith('?')) {
+        const qVal = tc.endpoint.split('?')[1] || '';
+        valPreview = decodeURIComponent(qVal);
+      } else if (tc.field.startsWith('Header:')) {
+        valPreview = `Missing auth header`;
+      } else {
+        valPreview = `Below min length ('x')`;
+      }
+
+      const itemEl = document.createElement("div");
+      itemEl.className = `field-probe-item ${isPinned ? 'pinned' : ''}`;
+      itemEl.innerHTML = `
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+            <span style="font-weight: 600; color: var(--foreground); font-size: 0.83rem;">${escapeHtml(tc.category)}</span>
+            ${tc.isCustom ? `<span style="font-size:0.62rem; font-weight:700; color:var(--primary); background:var(--accent); border:1px solid var(--border); padding:0.06rem 0.35rem; border-radius:3px; letter-spacing:0.03em;">CUSTOM</span>` : ''}
+            ${isPinned ? `<span class="pill" style="font-size:0.6rem; padding:0.04rem 0.35rem; background:rgba(234,179,8,0.18); color:#eab308; border:1px solid rgba(234,179,8,0.4);">📌 PINNED</span>` : ''}
+          </div>
+          <div style="color: var(--muted-foreground); font-size: 0.75rem; margin-top: 0.1rem;">${escapeHtml(tc.desc)}</div>
+          <div style="margin-top: 0.25rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--link); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px;">
+            Probe Value: <code>${escapeHtml(valPreview)}</code>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+          <span style="font-size: 0.74rem; color: var(--muted-foreground);">Expected: <strong style="color: var(--foreground);">${tc.allowAccepted ? '2xx / 4xx (No 500)' : escapeHtml(tc.expected)}</strong></span>
+          <div id="${resId}"><span class="pill pill-planned">READY</span></div>
+        </div>
+        <div class="probe-actions" style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
+          <button class="btn-pin-probe ${isPinned ? 'active' : ''}" onclick="togglePinProbe('${escapeJs(probeId)}')" title="${isPinned ? 'Unpin test probe' : 'Pin test probe to top'}">
+            📌
+          </button>
+          <button class="btn btn-outline-primary btn-run-probe" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="runSingleRouteProbe(${globalIndex}, '${resId}')">
+            ▶ Test
+          </button>
+          <button class="btn-icon" onclick="inspectSingleRouteProbe(${globalIndex})" title="Inspect payload">
+            🔍
+          </button>
+        </div>
+      `;
+
+      if (tc.isCustom) {
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-icon";
+        delBtn.title = "Delete custom probe";
+        delBtn.style.cssText = "color:var(--destructive); font-size: 0.8rem; padding: 0.2rem 0.35rem;";
+        delBtn.textContent = "🗑️";
+        delBtn.addEventListener("click", () => deleteCustomProbe(tc.id));
+        itemEl.querySelector(".probe-actions").appendChild(delBtn);
+      }
+
+      return itemEl;
+    }
+
     function renderEndpointPlannedTests() {
       const container = document.getElementById("endpoint-planned-tests-container");
       const badge = document.getElementById("endpoint-planned-count-badge");
@@ -5208,7 +6349,41 @@ Synthesize a single JSON object with these exact keys:
         return;
       }
 
-      // Group test cases by field
+      container.innerHTML = "";
+
+      // 1. Render Pinned Priority Tests if any exist for this route
+      const pinnedItems = routeCases.map((tc, globalIndex) => ({ tc, globalIndex })).filter(item => isProbePinned(getProbeId(item.tc)));
+      if (pinnedItems.length > 0) {
+        const pinnedCard = document.createElement("div");
+        pinnedCard.className = "field-group-card";
+        pinnedCard.style.cssText = "border: 1px solid rgba(234, 179, 8, 0.45); background: rgba(234, 179, 8, 0.03); margin-bottom: 0.75rem;";
+        pinnedCard.innerHTML = `
+          <div class="field-group-header" onclick="toggleFieldGroup('pinned-priority-grp')">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="font-size: 1rem;">📌</span>
+              <span style="font-weight: 700; color: #eab308; font-size: 0.85rem;">Pinned Priority Tests</span>
+              <span class="sub-tab-badge" style="background: rgba(234, 179, 8, 0.18); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.35); font-size: 0.7rem; font-weight: 700;">
+                ${pinnedItems.length} pinned
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <button class="btn btn-outline-primary" style="font-size: 0.7rem; padding: 0.18rem 0.5rem; border-color: rgba(234, 179, 8, 0.5); color: #eab308;" onclick="event.stopPropagation(); runFieldGroupProbes('pinned-priority-grp')" title="Run all pinned tests">
+                ▶ Test Pinned (${pinnedItems.length})
+              </button>
+              <span id="chevron-pinned-priority-grp" class="accordion-chevron">▼</span>
+            </div>
+          </div>
+          <div id="body-pinned-priority-grp" class="field-group-body" style="display: flex;">
+          </div>
+        `;
+        const pinnedBody = pinnedCard.querySelector("#body-pinned-priority-grp");
+        pinnedItems.forEach(({ tc, globalIndex }) => {
+          pinnedBody.appendChild(createProbeItemElement(tc, globalIndex, true));
+        });
+        container.appendChild(pinnedCard);
+      }
+
+      // 2. Group test cases by field
       const fieldGroups = {};
       routeCases.forEach((tc, i) => {
         const key = tc.field;
@@ -5218,7 +6393,6 @@ Synthesize a single JSON object with these exact keys:
         fieldGroups[key].push({ tc, globalIndex: i });
       });
 
-      container.innerHTML = "";
       Object.entries(fieldGroups).forEach(([fieldName, items], groupIndex) => {
         const safeId = `field-grp-${groupIndex}`;
 
@@ -5266,65 +6440,8 @@ Synthesize a single JSON object with these exact keys:
         }
 
         const bodyEl = groupCard.querySelector(`#body-${safeId}`);
-
         items.forEach(({ tc, globalIndex }) => {
-          let valPreview = "";
-          if (tc.queryParams && Object.keys(tc.queryParams).length > 0) {
-            valPreview = JSON.stringify(tc.queryParams);
-          } else if (tc.payload !== null && tc.payload !== undefined && typeof tc.payload === 'object' && tc.field !== '[body_root]') {
-            const targetVal = tc.payload[tc.field];
-            if (targetVal !== undefined) {
-              valPreview = JSON.stringify(targetVal);
-            } else {
-              valPreview = `(Field omitted)`;
-            }
-          } else if (tc.payload !== null && tc.payload !== undefined) {
-            valPreview = JSON.stringify(tc.payload);
-          } else if (tc.field.startsWith('?')) {
-            const qVal = tc.endpoint.split('?')[1] || '';
-            valPreview = decodeURIComponent(qVal);
-          } else if (tc.field.startsWith('Header:')) {
-            valPreview = `Missing auth header`;
-          } else {
-            valPreview = `Below min length ('x')`;
-          }
-
-          const itemEl = document.createElement("div");
-          itemEl.className = "field-probe-item";
-          itemEl.innerHTML = `
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                <span style="font-weight: 600; color: var(--foreground); font-size: 0.83rem;">${escapeHtml(tc.category)}</span>
-                ${tc.isCustom ? `<span style="font-size:0.62rem; font-weight:700; color:var(--primary); background:var(--accent); border:1px solid var(--border); padding:0.06rem 0.35rem; border-radius:3px; letter-spacing:0.03em;">CUSTOM</span>` : ''}
-              </div>
-              <div style="color: var(--muted-foreground); font-size: 0.75rem; margin-top: 0.1rem;">${escapeHtml(tc.desc)}</div>
-              <div style="margin-top: 0.25rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--link); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px;">
-                Probe Value: <code>${escapeHtml(valPreview)}</code>
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
-              <span style="font-size: 0.74rem; color: var(--muted-foreground);">Expected: <strong style="color: var(--foreground);">${tc.allowAccepted ? '2xx / 4xx (No 500)' : escapeHtml(tc.expected)}</strong></span>
-              <div id="route-probe-res-${globalIndex}"><span class="pill pill-planned">READY</span></div>
-            </div>
-            <div class="probe-actions" style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
-              <button class="btn btn-outline-primary btn-run-probe" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="runSingleRouteProbe(${globalIndex}, 'route-probe-res-${globalIndex}')">
-                ▶ Test
-              </button>
-              <button class="btn-icon" onclick="inspectSingleRouteProbe(${globalIndex})" title="Inspect payload">
-                🔍
-              </button>
-            </div>
-          `;
-          if (tc.isCustom) {
-            const delBtn = document.createElement("button");
-            delBtn.className = "btn-icon";
-            delBtn.title = "Delete custom probe";
-            delBtn.style.cssText = "color:var(--destructive); font-size: 0.8rem; padding: 0.2rem 0.35rem;";
-            delBtn.textContent = "🗑️";
-            delBtn.addEventListener("click", () => deleteCustomProbe(tc.id));
-            itemEl.querySelector(".probe-actions").appendChild(delBtn);
-          }
-          bodyEl.appendChild(itemEl);
+          bodyEl.appendChild(createProbeItemElement(tc, globalIndex, false));
         });
 
         container.appendChild(groupCard);
@@ -5467,12 +6584,16 @@ Synthesize a single JSON object with these exact keys:
 
       activeCases.forEach((tc, i) => {
         const method = safeHttpMethod(tc.opMethod);
+        const probeId = getProbeId(tc);
+        const isPinned = isProbePinned(probeId);
         const tr = document.createElement("tr");
         tr.id = `test-row-${i}`;
+        if (isPinned) tr.className = "pinned";
         tr.innerHTML = `
           <td>
             <span class="pill pill-planned">PLANNED</span>
             ${tc.isCustom ? `<span style="font-size:0.62rem; font-weight:700; color:var(--primary); background:var(--accent); border:1px solid var(--border); padding:0.06rem 0.35rem; border-radius:3px; margin-left:0.3rem;">CUSTOM</span>` : ''}
+            ${isPinned ? `<span class="pill" style="font-size:0.6rem; padding:0.04rem 0.35rem; background:rgba(234,179,8,0.18); color:#eab308; border:1px solid rgba(234,179,8,0.4); margin-left:0.3rem;">📌 PINNED</span>` : ''}
           </td>
           <td><span class="badge-method badge-${method}">${escapeHtml(method.toUpperCase())}</span> <code style="font-size:0.8rem; color: var(--foreground); margin-left: 0.35rem;">${escapeHtml(tc.opPath)}</code></td>
           <td><span class="field-tag">${escapeHtml(tc.field)}</span></td>
@@ -5480,6 +6601,7 @@ Synthesize a single JSON object with these exact keys:
           <td>${tc.allowAccepted ? '2xx / 4xx (No 500)' : `Expected ${escapeHtml(tc.expected)}`}</td>
           <td>--</td>
           <td class="table-actions" style="white-space: nowrap;">
+            <button class="btn-pin-probe ${isPinned ? 'active' : ''}" onclick="togglePinProbe('${escapeJs(probeId)}')" title="${isPinned ? 'Unpin test probe' : 'Pin test probe to top'}" style="margin-right:0.3rem;">📌</button>
             <button class="btn btn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem;" onclick="runSingleBoundaryTest(${i})">▶ Run</button>
             <button class="btn btn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem;" onclick="inspectTestPayload(${i})">Inspect</button>
           </td>
@@ -5500,9 +6622,23 @@ Synthesize a single JSON object with these exact keys:
     function getActiveTestCases() {
       const sel = document.getElementById("test-scope-select");
       const scope = sel ? sel.value : "all";
-      if (!scope || scope === "all") return testCases;
-      const [method, path] = scope.split(":");
-      return testCases.filter(tc => tc.opMethod === method && tc.opPath === path);
+      let cases = [];
+      if (!scope || scope === "all") {
+        cases = [...testCases];
+      } else {
+        const [method, path] = scope.split(":");
+        cases = testCases.filter(tc => tc.opMethod === method && tc.opPath === path);
+      }
+
+      // Sort pinned test cases first
+      cases.sort((a, b) => {
+        const pinA = isProbePinned(getProbeId(a));
+        const pinB = isProbePinned(getProbeId(b));
+        if (pinA !== pinB) return pinA ? -1 : 1;
+        return 0;
+      });
+
+      return cases;
     }
 
     function updateScopeStats() {
@@ -5871,6 +7007,7 @@ Synthesize a single JSON object with these exact keys:
         closeInspectProbeModal();
         closePytestModal();
         closeAddCustomTestModal();
+        closeAiRandomizerRulesModal();
       }
     });
 
@@ -5881,6 +7018,8 @@ Synthesize a single JSON object with these exact keys:
       if (e.target === pytestModal) closePytestModal();
       const customModal = document.getElementById("custom-test-modal");
       if (e.target === customModal) closeAddCustomTestModal();
+      const randomizerModal = document.getElementById("ai-randomizer-rules-modal");
+      if (e.target === randomizerModal) closeAiRandomizerRulesModal();
     });
   </script>
   <!-- Live Reload Notification Toast -->
