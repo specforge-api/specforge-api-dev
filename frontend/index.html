@@ -4736,6 +4736,39 @@
       }
     }
 
+    function getDeepValue(obj, path) {
+      if (!obj || typeof obj !== 'object' || !path) return undefined;
+      if (obj[path] !== undefined) return obj[path];
+
+      const dotIndex = path.indexOf('.');
+      const head = dotIndex === -1 ? path : path.slice(0, dotIndex);
+      const rest = dotIndex === -1 ? '' : path.slice(dotIndex + 1);
+
+      const bracketMatch = head.match(/^([^\[]+)\[(.*?)\]$/);
+      if (bracketMatch) {
+        const arrayKey = bracketMatch[1];
+        const indexStr = bracketMatch[2].trim();
+        const arr = obj[arrayKey];
+        if (!Array.isArray(arr) || arr.length === 0) return undefined;
+
+        if (indexStr === '') {
+          // Wildcard array (e.g. items[].quantity): extract from first element
+          return rest ? getDeepValue(arr[0], rest) : arr[0];
+        } else {
+          const idx = parseInt(indexStr, 10);
+          if (!isNaN(idx) && arr[idx] !== undefined) {
+            return rest ? getDeepValue(arr[idx], rest) : arr[idx];
+          }
+          return undefined;
+        }
+      }
+
+      if (!rest) {
+        return obj[head];
+      }
+      return getDeepValue(obj[head], rest);
+    }
+
     function extractAndApplyNaturalLanguageInstructions(payload, prompt, schema) {
       if (!payload || typeof payload !== 'object' || !prompt || typeof prompt !== 'string') return payload;
       const pText = prompt.trim();
@@ -5767,6 +5800,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         testCases.push({
           id: probe.id,
           isCustom: true,
+          probeValue: parsedVal,
+          valType: probe.valType,
           opMethod: probe.opMethod.toLowerCase(),
           opPath: probe.opPath,
           endpoint: endpoint,
@@ -7188,9 +7223,11 @@ Synthesize a single JSON object with these exact keys:
       if (tc.queryParams && Object.keys(tc.queryParams).length > 0) {
         valPreview = JSON.stringify(tc.queryParams);
       } else if (tc.payload !== null && tc.payload !== undefined && typeof tc.payload === 'object' && tc.field !== '[body_root]') {
-        const targetVal = tc.payload[tc.field];
+        const targetVal = getDeepValue(tc.payload, tc.field);
         if (targetVal !== undefined) {
           valPreview = JSON.stringify(targetVal);
+        } else if (tc.probeValue !== undefined) {
+          valPreview = JSON.stringify(tc.probeValue);
         } else {
           valPreview = `(Field omitted)`;
         }
