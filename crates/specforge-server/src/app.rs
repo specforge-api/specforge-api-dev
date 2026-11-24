@@ -16,6 +16,7 @@ pub struct AppState {
     pub target_url: String,
     pub export_target: String, // "jest" or "pytest"
     pub theme: String,
+    pub service_name: Option<String>,
     pub version: AtomicU64,
 }
 

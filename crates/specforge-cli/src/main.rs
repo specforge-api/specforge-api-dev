@@ -46,12 +46,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             println!("🎯 Target Backend: \x1b[34m{}\x1b[0m", target_url);
             println!("🛠️  Export Format:  \x1b[35m{}\x1b[0m (Node.js/Jest or Python/Pytest)", export_target);
 
+            let service_name = std::env::var("SERVICE_NAME").ok()
+                .or_else(|| std::env::var("PROJECT_NAME").ok())
+                .filter(|s| !s.trim().is_empty());
+
+            if let Some(ref svc) = service_name {
+                println!("🏷️  Service Scope:  \x1b[36m{}\x1b[0m", svc);
+            }
+
             let app_state = Arc::new(AppState {
                 spec: RwLock::new(api_spec),
                 spec_source: spec.clone(),
                 target_url,
                 export_target,
                 theme,
+                service_name,
                 version: std::sync::atomic::AtomicU64::new(1),
             });
 

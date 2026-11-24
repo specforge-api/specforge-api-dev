@@ -1661,6 +1661,24 @@
           </div>
         </div>
 
+        <!-- Service Namespace Scope Banner -->
+        <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius); background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--foreground); display: flex; align-items: center; gap: 0.45rem;">
+              <span>🏷️ Active Service Scope:</span>
+              <span id="active-service-scope-badge" class="pill" style="font-family: var(--font-mono); font-size: 0.72rem; padding: 0.15rem 0.5rem; background: rgba(59, 130, 246, 0.15); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.3);">
+                default-service
+              </span>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">
+              Tokens, environment variables, headers, and route toggles are isolated under this service key in browser storage.
+            </div>
+          </div>
+          <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.6rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="resetServiceStorage()" title="Reset settings for this service back to default">
+            🔄 Reset Service Storage
+          </button>
+        </div>
+
         <!-- Section 1: Environment Variables -->
         <div class="card">
           <div class="card-title">
@@ -2151,9 +2169,76 @@
       { id: 'env-5', enabled: true, key: 'userId', value: 'usr_101', isSecret: false }
     ];
 
+    // =========================================================================
+    // Multi-Service Namespaced Storage Engine
+    // =========================================================================
+    function getActiveServiceId() {
+      const cfg = window.__SPECFORGE_CONFIG__ || {};
+      if (cfg.service_id && typeof cfg.service_id === 'string' && cfg.service_id.trim()) {
+        return cfg.service_id.trim();
+      }
+      const title = cfg.title || (typeof spec !== 'undefined' && spec?.title) || 'default-service';
+      const clean = title.replace(/\s*\|\s*SpecForge Studio/i, '').trim();
+      const slug = clean.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+      return slug || 'default-service';
+    }
+
+    function getServiceStorageKey(baseKey) {
+      const sId = getActiveServiceId();
+      return baseKey.replace(/^specforge_/, `specforge_${sId}_`);
+    }
+
+    function getServiceItem(baseKey) {
+      try {
+        const scopedKey = getServiceStorageKey(baseKey);
+        const scopedVal = localStorage.getItem(scopedKey);
+        if (scopedVal !== null) return scopedVal;
+        // Fallback to legacy un-scoped key if present
+        return localStorage.getItem(baseKey);
+      } catch {
+        return null;
+      }
+    }
+
+    function setServiceItem(baseKey, val) {
+      try {
+        const scopedKey = getServiceStorageKey(baseKey);
+        localStorage.setItem(scopedKey, val);
+      } catch (e) {
+        console.warn("SpecForge localStorage write error:", e);
+      }
+    }
+
+    function removeServiceItem(baseKey) {
+      try {
+        const scopedKey = getServiceStorageKey(baseKey);
+        localStorage.removeItem(scopedKey);
+        localStorage.removeItem(baseKey);
+      } catch {}
+    }
+
+    function resetServiceStorage() {
+      const sId = getActiveServiceId();
+      if (!confirm(`Reset all environment variables, tokens, headers, and route settings for service "${sId}" back to defaults?`)) {
+        return;
+      }
+      const keys = [
+        "specforge_env_vars_v1",
+        "specforge_master_gh_v1",
+        "specforge_global_auth_v1",
+        "specforge_global_headers_v1",
+        "specforge_endpoint_gh_overrides_v1",
+        "specforge_endpoint_disabled_gh_v1",
+        "specforge_fail_on_500",
+        "specforge_custom_probes"
+      ];
+      keys.forEach(k => removeServiceItem(k));
+      window.location.reload();
+    }
+
     let envVars = [];
     try {
-      const savedEnvs = localStorage.getItem("specforge_env_vars_v1");
+      const savedEnvs = getServiceItem("specforge_env_vars_v1");
       envVars = savedEnvs ? JSON.parse(savedEnvs) : DEFAULT_ENV_VARS;
     } catch {
       envVars = DEFAULT_ENV_VARS;
@@ -2168,7 +2253,7 @@
     }
 
     function saveEnvVars() {
-      localStorage.setItem("specforge_env_vars_v1", JSON.stringify(envVars));
+      setServiceItem("specforge_env_vars_v1", JSON.stringify(envVars));
       renderEnvVarsTable();
       updateSidebarBadges();
       updateResolvedUrl();
@@ -2180,7 +2265,7 @@
     // =========================================================================
     let masterGlobalHeadersEnabled = true;
     try {
-      const savedMaster = localStorage.getItem("specforge_master_gh_v1");
+      const savedMaster = getServiceItem("specforge_master_gh_v1");
       if (savedMaster !== null) masterGlobalHeadersEnabled = JSON.parse(savedMaster);
     } catch {}
 
@@ -2195,7 +2280,7 @@
     };
     let globalAuth = DEFAULT_GLOBAL_AUTH;
     try {
-      const savedAuth = localStorage.getItem("specforge_global_auth_v1");
+      const savedAuth = getServiceItem("specforge_global_auth_v1");
       if (savedAuth) globalAuth = { ...DEFAULT_GLOBAL_AUTH, ...JSON.parse(savedAuth) };
     } catch {}
 
@@ -2204,30 +2289,30 @@
     ];
     let globalHeaders = DEFAULT_GLOBAL_HEADERS;
     try {
-      const savedGh = localStorage.getItem("specforge_global_headers_v1");
+      const savedGh = getServiceItem("specforge_global_headers_v1");
       if (savedGh) globalHeaders = JSON.parse(savedGh);
     } catch {}
 
     // Per-Endpoint Global Header Overrides (true = enabled, false = disabled)
     let endpointGlobalHeaderOverrides = {};
     try {
-      const savedOverrides = localStorage.getItem("specforge_endpoint_gh_overrides_v1");
+      const savedOverrides = getServiceItem("specforge_endpoint_gh_overrides_v1");
       if (savedOverrides) endpointGlobalHeaderOverrides = JSON.parse(savedOverrides);
     } catch {}
 
     function saveEndpointGlobalHeaderOverrides() {
-      localStorage.setItem("specforge_endpoint_gh_overrides_v1", JSON.stringify(endpointGlobalHeaderOverrides));
+      setServiceItem("specforge_endpoint_gh_overrides_v1", JSON.stringify(endpointGlobalHeaderOverrides));
     }
 
     // Per-Endpoint Disabled Individual Global Headers (keyed by opKey -> { [headerKeyLower]: true })
     let endpointDisabledGlobalHeaders = {};
     try {
-      const savedDisabled = localStorage.getItem("specforge_endpoint_disabled_gh_v1");
+      const savedDisabled = getServiceItem("specforge_endpoint_disabled_gh_v1");
       if (savedDisabled) endpointDisabledGlobalHeaders = JSON.parse(savedDisabled);
     } catch {}
 
     function saveEndpointDisabledGlobalHeaders() {
-      localStorage.setItem("specforge_endpoint_disabled_gh_v1", JSON.stringify(endpointDisabledGlobalHeaders));
+      setServiceItem("specforge_endpoint_disabled_gh_v1", JSON.stringify(endpointDisabledGlobalHeaders));
     }
 
     function isGlobalHeadersEnabledForOp(op) {
@@ -2584,9 +2669,9 @@
     }
 
     function saveGlobalHeaders() {
-      localStorage.setItem("specforge_global_headers_v1", JSON.stringify(globalHeaders));
-      localStorage.setItem("specforge_global_auth_v1", JSON.stringify(globalAuth));
-      localStorage.setItem("specforge_master_gh_v1", JSON.stringify(masterGlobalHeadersEnabled));
+      setServiceItem("specforge_global_headers_v1", JSON.stringify(globalHeaders));
+      setServiceItem("specforge_global_auth_v1", JSON.stringify(globalAuth));
+      setServiceItem("specforge_master_gh_v1", JSON.stringify(masterGlobalHeadersEnabled));
       renderGlobalHeadersTable();
       updateSidebarBadges();
       updateEndpointGlobalHeaderBadge();
@@ -2746,6 +2831,9 @@
     }
 
     function renderSettingsView() {
+      const svcBadge = document.getElementById("active-service-scope-badge");
+      if (svcBadge) svcBadge.textContent = getActiveServiceId();
+
       renderEnvVarsTable();
       renderGlobalHeadersTable();
       updateGlobalAuthUI();
@@ -2759,7 +2847,7 @@
       const fail500Box = document.getElementById("setting-fail-500");
       if (fail500Box) {
         try {
-          const saved = localStorage.getItem("specforge_fail_on_500");
+          const saved = getServiceItem("specforge_fail_on_500");
           if (saved !== null) fail500Box.checked = JSON.parse(saved);
         } catch {}
       }
@@ -2769,7 +2857,7 @@
     function saveGeneralSettings() {
       const checkbox = document.getElementById("setting-fail-500");
       if (checkbox) {
-        localStorage.setItem("specforge_fail_on_500", JSON.stringify(checkbox.checked));
+        setServiceItem("specforge_fail_on_500", JSON.stringify(checkbox.checked));
       }
     }
 
@@ -4419,7 +4507,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
     function getCustomProbesFromStorage() {
       try {
-        const raw = localStorage.getItem("specforge_custom_probes");
+        const raw = getServiceItem("specforge_custom_probes");
         return raw ? JSON.parse(raw) : [];
       } catch (e) {
         console.error("Failed to load custom probes:", e);
@@ -4429,7 +4517,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
     function saveCustomProbesToStorage(probes) {
       try {
-        localStorage.setItem("specforge_custom_probes", JSON.stringify(probes));
+        setServiceItem("specforge_custom_probes", JSON.stringify(probes));
       } catch (e) {
         console.error("Failed to save custom probes:", e);
       }

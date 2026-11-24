@@ -19,8 +19,18 @@ pub async fn serve_studio_docs(State(state): State<Arc<AppState>>) -> Response {
     };
 
     let spec_guard = state.spec.read().await;
+    let service_id = state.service_name.clone().unwrap_or_else(|| {
+        let clean: String = spec_guard.title.to_lowercase()
+            .chars()
+            .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
+            .collect();
+        let trimmed = clean.trim_matches('-').to_string();
+        if trimmed.is_empty() { "default-service".to_string() } else { trimmed }
+    });
+
     let config_data = serde_json::json!({
         "title": format!("{} | SpecForge Studio", spec_guard.title),
+        "service_id": service_id,
         "path": "/docs",
         "spec_url": "/openapi.json",
         "theme": state.theme,
