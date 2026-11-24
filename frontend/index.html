@@ -1081,6 +1081,47 @@
       border-left: 3px solid #eab308;
       background: linear-gradient(90deg, rgba(234, 179, 8, 0.06), var(--card));
     }
+    @keyframes newlyAddedPulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        border-color: #10b981 !important;
+        background-color: rgba(16, 185, 129, 0.22) !important;
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+        border-color: #10b981 !important;
+        background-color: rgba(16, 185, 129, 0.12) !important;
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        border-color: rgba(16, 185, 129, 0.6) !important;
+        background-color: rgba(16, 185, 129, 0.08) !important;
+      }
+    }
+    .field-probe-item.newly-added-probe {
+      border-left: 3px solid #10b981 !important;
+      border-color: rgba(16, 185, 129, 0.6) !important;
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), var(--card)) !important;
+      animation: newlyAddedPulse 1.8s ease-in-out 3;
+    }
+    tr.newly-added-probe {
+      background-color: rgba(16, 185, 129, 0.12) !important;
+      border-left: 3px solid #10b981 !important;
+      animation: newlyAddedPulse 1.8s ease-in-out 3;
+    }
+    .pill-new-tag {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 0.06rem 0.35rem;
+      border-radius: 3px;
+      letter-spacing: 0.03em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
     .btn-pin-probe {
       font-size: 0.82rem;
       padding: 0.2rem 0.35rem;
@@ -3279,6 +3320,7 @@
       if (document.getElementById("view-settings") && document.getElementById("view-settings").classList.contains("active")) {
         switchTab('client');
       }
+      window.__newlyAddedProbeIds = new Set();
       selectedOpIndex = index;
       renderEndpointList();
       const op = operations[index];
@@ -6313,6 +6355,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       }
 
       const existingProbes = getCustomProbesFromStorage();
+      const addedIds = [];
 
       probesToAdd.forEach(p => {
         const customProbe = {
@@ -6328,19 +6371,57 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           expected: p.expected,
           createdAt: Date.now()
         };
+        addedIds.push(customProbe.id);
         existingProbes.unshift(customProbe);
       });
 
       saveCustomProbesToStorage(existingProbes);
+      closeAddCustomTestModal();
+
+      highlightAndScrollToNewProbes(addedIds);
+    }
+
+    function highlightAndScrollToNewProbes(addedIds) {
+      if (!addedIds || addedIds.length === 0) return;
+      window.__newlyAddedProbeIds = new Set(addedIds);
+
+      // Re-synthesize test cases and re-render views
       synthesizeTestPlan();
 
-      isEndpointAccordionOpen = true;
-      const body = document.getElementById("endpoint-tests-body");
-      const chevron = document.getElementById("accordion-chevron");
-      if (body) body.style.display = "block";
-      if (chevron) chevron.classList.remove("collapsed");
+      const isTestingView = document.getElementById("view-testing")?.classList.contains("active");
 
-      closeAddCustomTestModal();
+      if (!isTestingView) {
+        // Expand endpoint planned tests accordion
+        isEndpointAccordionOpen = true;
+        const body = document.getElementById("endpoint-tests-body");
+        const chevron = document.getElementById("accordion-chevron");
+        if (body) body.style.display = "block";
+        if (chevron) chevron.classList.remove("collapsed");
+      }
+
+      // Smooth scroll directly to the newly added probe
+      setTimeout(() => {
+        let targetEl = null;
+        if (isTestingView) {
+          for (const id of addedIds) {
+            targetEl = document.querySelector(`tr[data-probe-id="${id}"]`);
+            if (targetEl) break;
+          }
+        } else {
+          for (const id of addedIds) {
+            targetEl = document.getElementById(`probe-item-${id}`);
+            if (targetEl) break;
+          }
+        }
+
+        if (!targetEl) {
+          targetEl = document.querySelector(".newly-added-probe");
+        }
+
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
     }
 
     // =========================================================================
@@ -6773,21 +6854,16 @@ Synthesize a single JSON object with these exact keys:
       probes.unshift(customProbe);
       saveCustomProbesToStorage(probes);
 
-      // Refresh synthesized test plan & views
-      synthesizeTestPlan();
-
-      // Ensure planned tests section is expanded
-      isEndpointAccordionOpen = true;
-      const body = document.getElementById("endpoint-tests-body");
-      const chevron = document.getElementById("accordion-chevron");
-      if (body) body.style.display = "block";
-      if (chevron) chevron.classList.remove("collapsed");
-
       closeAddCustomTestModal();
+
+      highlightAndScrollToNewProbes([customProbe.id]);
     }
 
     function deleteCustomProbe(probeId) {
       if (!confirm("Are you sure you want to remove this custom test?")) return;
+      if (window.__newlyAddedProbeIds) {
+        window.__newlyAddedProbeIds.delete(probeId);
+      }
       const probes = getCustomProbesFromStorage();
       const updated = probes.filter(p => p.id !== probeId);
       saveCustomProbesToStorage(updated);
@@ -6898,6 +6974,7 @@ Synthesize a single JSON object with these exact keys:
     function createProbeItemElement(tc, globalIndex, isPinnedSection = false) {
       const probeId = getProbeId(tc);
       const isPinned = isProbePinned(probeId);
+      const isNew = window.__newlyAddedProbeIds && window.__newlyAddedProbeIds.has(tc.id);
       const resId = isPinnedSection ? `route-probe-res-pinned-${globalIndex}` : `route-probe-res-${globalIndex}`;
 
       let valPreview = "";
@@ -6922,12 +6999,18 @@ Synthesize a single JSON object with these exact keys:
       }
 
       const itemEl = document.createElement("div");
-      itemEl.className = `field-probe-item ${isPinned ? 'pinned' : ''}`;
+      itemEl.id = `probe-item-${tc.id || globalIndex}`;
+      itemEl.dataset.probeId = tc.id || "";
+      const classes = ["field-probe-item"];
+      if (isPinned) classes.push("pinned");
+      if (isNew) classes.push("newly-added-probe");
+      itemEl.className = classes.join(" ");
       itemEl.innerHTML = `
         <div>
           <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
             <span style="font-weight: 600; color: var(--foreground); font-size: 0.83rem;">${escapeHtml(tc.category)}</span>
             ${tc.isCustom ? `<span style="font-size:0.62rem; font-weight:700; color:var(--primary); background:var(--accent); border:1px solid var(--border); padding:0.06rem 0.35rem; border-radius:3px; letter-spacing:0.03em;">CUSTOM</span>` : ''}
+            ${isNew ? `<span class="pill-new-tag">✨ NEW</span>` : ''}
             ${isPinned ? `<span class="pill" style="font-size:0.6rem; padding:0.04rem 0.35rem; background:rgba(234,179,8,0.18); color:#eab308; border:1px solid rgba(234,179,8,0.4);">📌 PINNED</span>` : ''}
           </div>
           <div style="color: var(--muted-foreground); font-size: 0.75rem; margin-top: 0.1rem;">${escapeHtml(tc.desc)}</div>
@@ -7072,6 +7155,12 @@ Synthesize a single JSON object with these exact keys:
         }
 
         const bodyEl = groupCard.querySelector(`#body-${safeId}`);
+        const hasNewlyAdded = items.some(({ tc }) => window.__newlyAddedProbeIds && window.__newlyAddedProbeIds.has(tc.id));
+        if (hasNewlyAdded) {
+          bodyEl.style.display = "flex";
+          const chev = groupCard.querySelector(`#chevron-${safeId}`);
+          if (chev) chev.classList.remove("collapsed");
+        }
         items.forEach(({ tc, globalIndex }) => {
           bodyEl.appendChild(createProbeItemElement(tc, globalIndex, false));
         });
@@ -7218,13 +7307,19 @@ Synthesize a single JSON object with these exact keys:
         const method = safeHttpMethod(tc.opMethod);
         const probeId = getProbeId(tc);
         const isPinned = isProbePinned(probeId);
+        const isNew = window.__newlyAddedProbeIds && window.__newlyAddedProbeIds.has(tc.id);
         const tr = document.createElement("tr");
         tr.id = `test-row-${i}`;
-        if (isPinned) tr.className = "pinned";
+        tr.dataset.probeId = tc.id || "";
+        const classes = [];
+        if (isPinned) classes.push("pinned");
+        if (isNew) classes.push("newly-added-probe");
+        if (classes.length > 0) tr.className = classes.join(" ");
         tr.innerHTML = `
           <td>
             <span class="pill pill-planned">PLANNED</span>
             ${tc.isCustom ? `<span style="font-size:0.62rem; font-weight:700; color:var(--primary); background:var(--accent); border:1px solid var(--border); padding:0.06rem 0.35rem; border-radius:3px; margin-left:0.3rem;">CUSTOM</span>` : ''}
+            ${isNew ? `<span class="pill-new-tag" style="margin-left:0.3rem;">✨ NEW</span>` : ''}
             ${isPinned ? `<span class="pill" style="font-size:0.6rem; padding:0.04rem 0.35rem; background:rgba(234,179,8,0.18); color:#eab308; border:1px solid rgba(234,179,8,0.4); margin-left:0.3rem;">📌 PINNED</span>` : ''}
           </td>
           <td><span class="badge-method badge-${method}">${escapeHtml(method.toUpperCase())}</span> <code style="font-size:0.8rem; color: var(--foreground); margin-left: 0.35rem;">${escapeHtml(tc.opPath)}</code></td>
