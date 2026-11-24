@@ -1899,6 +1899,65 @@
             </div>
           </div>
         </div>
+
+        <!-- Section 4: AI Model & Local Neural Inference Engine -->
+        <div class="card">
+          <div class="card-title">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.1rem;">🧠</span>
+              <span>Local AI Model & Neural Inference Engine</span>
+            </div>
+            <span class="pill pill-pass" id="settings-ai-active-pill" style="font-size: 0.72rem;">SmolLM2 135M (Default)</span>
+          </div>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">
+            Select the client-side neural model used by <strong>✨ AI Randomize</strong> and the <strong>🧪 Custom Test Generator</strong>. 
+            Runs 100% locally in your browser via <strong>WebGPU / WASM</strong> with zero external API calls, zero token costs, and strict privacy.
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Option 1: SmolLM2 135M (Default) -->
+            <div class="ai-model-choice-card" id="ai-choice-smollm2" onclick="chooseAiModel('smollm2')" style="border: 2px solid var(--primary); background: rgba(59, 130, 246, 0.08); border-radius: var(--radius); padding: 1rem; cursor: pointer; transition: all 0.2s ease; position: relative;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 1.3rem;">⚡</span>
+                  <div>
+                    <div style="font-weight: 700; font-size: 0.9rem;">SmolLM2 135M Instruct</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">HuggingFaceTB/SmolLM2-135M-Instruct</div>
+                  </div>
+                </div>
+                <span class="pill pill-planned" style="font-size: 0.68rem; font-weight: 700;">Default • Lightweight</span>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.35;">
+                Ultra-compact (~90MB), near-instant startup, and minimal memory usage. Recommended for rapid everyday fuzzing and mock generation.
+              </p>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+                <span style="color: var(--foreground); font-weight: 600;">Download Size: ~90MB (q4)</span>
+                <span class="ai-choice-status" id="ai-choice-status-smollm2" style="color: var(--primary); font-weight: 700;">● Active</span>
+              </div>
+            </div>
+
+            <!-- Option 2: Gemma 3 1B Instruct -->
+            <div class="ai-model-choice-card" id="ai-choice-gemma3" onclick="chooseAiModel('gemma3')" style="border: 1px solid var(--border); background: var(--secondary); border-radius: var(--radius); padding: 1rem; cursor: pointer; transition: all 0.2s ease; position: relative;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 1.3rem;">💎</span>
+                  <div>
+                    <div style="font-weight: 700; font-size: 0.9rem;">Gemma 3 1B Instruct</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">onnx-community/gemma-3-1b-it-ONNX-GQA</div>
+                  </div>
+                </div>
+                <span class="pill pill-pass" style="font-size: 0.68rem; font-weight: 700;">Google Gemma 3</span>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.35;">
+                Higher reasoning capacity, advanced schema comprehension, and larger vocabulary. Downloads ~800MB on first run and caches in browser IndexedDB.
+              </p>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+                <span style="color: var(--foreground); font-weight: 600;">Download Size: ~800MB (q4)</span>
+                <span class="ai-choice-status" id="ai-choice-status-gemma3" style="color: var(--text-muted);">Select</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -2024,7 +2083,7 @@
             <span>⚡</span> 100% Local Inference & Air-Gapped Privacy
           </div>
           <div style="color: var(--muted-foreground); font-size: 0.8rem;">
-            Powered by <code>SmolLM2-135M-Instruct</code> via ONNX / Transformers.js. Model weights are cached locally in your browser's IndexedDB. Zero prompts, schemas, or tokens leave your workstation.
+            Powered by <code id="ai-modal-active-model-name">SmolLM2-135M-Instruct</code> via ONNX / Transformers.js. Model weights are cached locally in your browser's IndexedDB. Zero prompts, schemas, or tokens leave your workstation.
           </div>
         </div>
 
@@ -3085,6 +3144,7 @@
           if (saved !== null) fail500Box.checked = JSON.parse(saved);
         } catch {}
       }
+      renderAiModelSettingsUI();
       updateSidebarBadges();
     }
 
@@ -3998,9 +4058,100 @@
     // Zero Container Bloat • 100% In-Browser Privacy • Strict Sandboxed Isolation
     // =========================================================================
 
+    const AI_MODELS = {
+      'smollm2': {
+        key: 'smollm2',
+        name: 'SmolLM2 135M Instruct',
+        id: 'HuggingFaceTB/SmolLM2-135M-Instruct',
+        badge: 'Default • Lightweight',
+        size: '~90MB',
+        downloadDesc: 'Initializing SmolLM2-135M (~60MB-90MB cached in browser)...',
+        dtype: 'q4',
+        maxTokens: 180,
+        temperature: 0.75,
+        top_p: 0.9,
+        description: 'Ultra-lightweight local model. Fast cold start (~90MB), minimal memory footprint. Recommended for fast, everyday schema fuzzing and mock generation.'
+      },
+      'gemma3': {
+        key: 'gemma3',
+        name: 'Gemma 3 1B Instruct',
+        id: 'onnx-community/gemma-3-1b-it-ONNX-GQA',
+        badge: 'Google Gemma 3 (1B)',
+        size: '~800MB',
+        downloadDesc: 'Initializing Gemma 3 1B (~800MB cached in browser)...',
+        dtype: 'q4',
+        maxTokens: 256,
+        temperature: 0.7,
+        top_p: 0.95,
+        description: 'Google Gemma 3 1B instruction-tuned model. Provides superior reasoning, richer domain semantics, and higher adherence to nuanced schema instructions.'
+      }
+    };
+
     let aiPipeline = null;
+    let currentLoadedModelKey = null;
     let isAiGenerating = false;
     let isAiLoadingPipeline = false;
+
+    function getSelectedAiModelKey() {
+      try {
+        const saved = getServiceItem("specforge_ai_model_key_v1");
+        if (saved && AI_MODELS[saved]) return saved;
+      } catch {}
+      return 'smollm2';
+    }
+
+    function chooseAiModel(modelKey) {
+      if (!AI_MODELS[modelKey]) return;
+      const current = getSelectedAiModelKey();
+      if (current !== modelKey) {
+        aiPipeline = null;
+        currentLoadedModelKey = null;
+      }
+      setServiceItem("specforge_ai_model_key_v1", modelKey);
+      renderAiModelSettingsUI();
+    }
+
+    function renderAiModelSettingsUI() {
+      const activeKey = getSelectedAiModelKey();
+      const activeConfig = AI_MODELS[activeKey] || AI_MODELS.smollm2;
+
+      const activePill = document.getElementById("settings-ai-active-pill");
+      if (activePill) {
+        activePill.textContent = `${activeConfig.name} (${activeKey === 'smollm2' ? 'Default' : 'Active'})`;
+        activePill.className = (activeKey === 'smollm2') ? 'pill pill-planned' : 'pill pill-pass';
+      }
+
+      Object.keys(AI_MODELS).forEach(k => {
+        const card = document.getElementById(`ai-choice-${k}`);
+        const statusEl = document.getElementById(`ai-choice-status-${k}`);
+        if (!card) return;
+        const isSelected = (k === activeKey);
+        if (isSelected) {
+          card.style.borderColor = "var(--primary)";
+          card.style.background = "rgba(59, 130, 246, 0.08)";
+          card.style.boxShadow = "0 0 0 1px var(--primary)";
+          if (statusEl) {
+            statusEl.innerHTML = `● Active`;
+            statusEl.style.color = "var(--primary)";
+            statusEl.style.fontWeight = "700";
+          }
+        } else {
+          card.style.borderColor = "var(--border)";
+          card.style.background = "var(--secondary)";
+          card.style.boxShadow = "none";
+          if (statusEl) {
+            statusEl.innerHTML = `Select`;
+            statusEl.style.color = "var(--text-muted)";
+            statusEl.style.fontWeight = "500";
+          }
+        }
+      });
+
+      const secModelEl = document.getElementById("ai-modal-active-model-name");
+      if (secModelEl) {
+        secModelEl.textContent = `${activeConfig.name} (${activeConfig.id})`;
+      }
+    }
 
     async function showAiSecurityModal() {
       const modal = document.getElementById("ai-security-modal");
@@ -4008,6 +4159,13 @@
       if (modal) {
         modal.classList.add("active");
         modal.style.display = "flex";
+      }
+
+      const activeKey = getSelectedAiModelKey();
+      const activeConfig = AI_MODELS[activeKey] || AI_MODELS.smollm2;
+      const secModelEl = document.getElementById("ai-modal-active-model-name");
+      if (secModelEl) {
+        secModelEl.textContent = `${activeConfig.name} (${activeConfig.id})`;
       }
 
       if (statusEl) {
@@ -5000,13 +5158,17 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
     // Lazy pipeline loader for Transformers.js (WebGPU accelerated)
     async function getOrCreateAiPipeline(onProgress) {
-      if (aiPipeline) return aiPipeline;
+      const activeKey = getSelectedAiModelKey();
+      const activeConfig = AI_MODELS[activeKey] || AI_MODELS.smollm2;
+
+      if (aiPipeline && currentLoadedModelKey === activeKey) return aiPipeline;
+
       if (isAiLoadingPipeline) {
         // Wait if another invocation is loading
         while (isAiLoadingPipeline) {
           await new Promise(r => setTimeout(r, 200));
         }
-        return aiPipeline;
+        if (aiPipeline && currentLoadedModelKey === activeKey) return aiPipeline;
       }
 
       isAiLoadingPipeline = true;
@@ -5020,17 +5182,18 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         }
 
         const device = (typeof navigator !== 'undefined' && 'gpu' in navigator) ? 'webgpu' : 'wasm';
-        const modelId = 'HuggingFaceTB/SmolLM2-135M-Instruct';
+        const modelId = activeConfig.id;
 
         aiPipeline = await pipeline('text-generation', modelId, {
           device: device,
-          dtype: 'q4',
+          dtype: activeConfig.dtype || 'q4',
           progress_callback: (progress) => {
             if (typeof onProgress === 'function') {
               onProgress(progress);
             }
           }
         });
+        currentLoadedModelKey = activeKey;
         return aiPipeline;
       } finally {
         isAiLoadingPipeline = false;
@@ -5074,10 +5237,12 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
       try {
         let payload = null;
+        const activeKey = getSelectedAiModelKey();
+        const activeConfig = AI_MODELS[activeKey] || AI_MODELS.smollm2;
 
         // If pipeline not ready, try initializing with progress tracking
-        if (!aiPipeline) {
-          if (statusMsg) statusMsg.innerHTML = `<span class="ai-spinner-anim">📥</span> Initializing SmolLM2-135M (~60MB cached in browser)...`;
+        if (!aiPipeline || currentLoadedModelKey !== activeKey) {
+          if (statusMsg) statusMsg.innerHTML = `<span class="ai-spinner-anim">📥</span> ${escapeHtml(activeConfig.downloadDesc)}`;
           try {
             await getOrCreateAiPipeline((p) => {
               if (p.status === 'progress' && p.total) {
@@ -5096,7 +5261,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         // Run in-browser neural inference if pipeline is available
         if (aiPipeline) {
           const deviceLabel = (typeof navigator !== 'undefined' && 'gpu' in navigator) ? 'WebGPU' : 'WASM';
-          if (statusMsg) statusMsg.innerHTML = `<span class="ai-spinner-anim">✨</span> Running ${deviceLabel} Neural Inference...`;
+          if (statusMsg) statusMsg.innerHTML = `<span class="ai-spinner-anim">✨</span> Running ${deviceLabel} Neural Inference (${escapeHtml(activeConfig.name)})...`;
           if (progressBar) progressBar.style.width = "75%";
 
           const prompt = buildSanitizedAiPrompt(op, resolved);
@@ -5107,9 +5272,9 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
           const tStart = performance.now();
           const output = await aiPipeline(messages, {
-            max_new_tokens: 180,
-            temperature: 0.75,
-            top_p: 0.9,
+            max_new_tokens: activeConfig.maxTokens || 180,
+            temperature: activeConfig.temperature || 0.75,
+            top_p: activeConfig.top_p || 0.9,
           });
           const duration = Math.round(performance.now() - tStart);
 
@@ -5117,7 +5282,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           payload = extractAndValidateJson(rawResponse, resolved);
 
           if (payload) {
-            if (statusMsg) statusMsg.innerHTML = `✅ Synthesized via ${deviceLabel} in ${duration}ms!`;
+            if (statusMsg) statusMsg.innerHTML = `✅ Synthesized via ${deviceLabel} (${escapeHtml(activeConfig.name)}) in ${duration}ms!`;
             if (statusDetail) statusDetail.textContent = "100% Local";
             if (progressBar) progressBar.style.width = "100%";
           }
@@ -6147,7 +6312,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         // 1. Try In-Browser Neural WebGPU Inference if pipeline is ready
         if (aiPipeline) {
           try {
-            if (statusEl) statusEl.innerHTML = `<span class="ai-spinner-anim">✨</span> WebGPU Neural Synthesis...`;
+            const activeModel = AI_MODELS[getSelectedAiModelKey()] || AI_MODELS.smollm2;
+            if (statusEl) statusEl.innerHTML = `<span class="ai-spinner-anim">✨</span> WebGPU Neural Synthesis (${escapeHtml(activeModel.name)})...`;
             const aiPrompt = buildCustomProbeAiPrompt(op, resolvedSchema, instruction);
             const messages = [
               {
@@ -6158,7 +6324,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
             ];
 
             const output = await aiPipeline(messages, {
-              max_new_tokens: 160,
+              max_new_tokens: activeModel.maxTokens || 160,
               temperature: 0.4,
               top_p: 0.9
             });
