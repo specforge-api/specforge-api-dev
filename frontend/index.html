@@ -2139,7 +2139,7 @@
         <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 0.75rem;">
           <div>
             <label style="font-size: 0.78rem; font-weight: 700; display: block; margin-bottom: 0.3rem;">Target Field</label>
-            <select id="prompt-target-field-select" class="kv-input">
+            <select id="prompt-target-field-select" class="kv-input" onchange="onPromptTargetFieldSelectChange()">
               <!-- Populated dynamically -->
             </select>
           </div>
@@ -2223,7 +2223,6 @@
             <select id="custom-field-select" class="kv-input" onchange="onCustomFieldSelectChange()">
               <!-- Populated dynamically -->
             </select>
-            <input type="text" id="custom-field-name-input" class="kv-input" placeholder="Type custom field name..." style="margin-top: 0.4rem; display: none;">
           </div>
           <div>
             <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Location</label>
@@ -5702,11 +5701,13 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           }
         }
 
-        const schema = op.raw?.requestBody?.content?.['application/json']?.schema;
-        const baseline = schema ? generateMockFromSchema(schema) : {};
+        const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+        const schema = rawSchema ? resolveRef(rawSchema) : null;
+        const baseline = schema ? (generateSmartSemanticMock(schema) || generateMockFromSchema(schema)) : {};
 
         if (probe.location === 'body') {
-          payload = { ...baseline, [probe.field]: parsedVal };
+          payload = JSON.parse(JSON.stringify(baseline));
+          setDeepValue(payload, probe.field, parsedVal);
         } else if (probe.location === 'query') {
           const qKey = probe.field.replace(/^\?/, '');
           endpoint = `${op.path}?${encodeURIComponent(qKey)}=${encodeURIComponent(probe.value)}`;
@@ -5714,6 +5715,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           endpoint = op.path.replace(/\{([^}]+)\}/g, encodeURIComponent(probe.value));
         }
 
+        const expStatus = Number(probe.expected) || 422;
         testCases.push({
           id: probe.id,
           isCustom: true,
@@ -5726,7 +5728,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           category: probe.category || "Custom Boundary",
           desc: probe.desc || `Custom test probe for '${probe.field}'`,
           payload: payload,
-          expected: Number(probe.expected) || 422
+          expected: expStatus,
+          isNegative: expStatus >= 400
         });
       });
     }
@@ -5756,28 +5759,29 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       document.getElementById("custom-modal-route-method").textContent = op.method.toUpperCase();
       document.getElementById("custom-modal-route-path").textContent = op.path;
 
-      // Populate both field dropdowns (Prompt tab & Manual tab)
+      // Populate both field dropdowns (Prompt tab & Manual tab) with actual schema properties only
       const selPrompt = document.getElementById("prompt-target-field-select");
       const selManual = document.getElementById("custom-field-select");
       if (selPrompt) selPrompt.innerHTML = "";
       if (selManual) selManual.innerHTML = "";
 
-      const schema = op.raw?.requestBody?.content?.['application/json']?.schema;
       const rawParams = op.raw?.parameters || [];
+      const { allFields } = getRouteSchemaFieldList(op);
 
       function populateFieldOptions(targetSel) {
         if (!targetSel) return;
-        // Body fields
-        if (schema && schema.properties) {
+        // Body fields from actual schema (includes nested and array items)
+        if (allFields && allFields.length > 0) {
           const bodyOptGroup = document.createElement("optgroup");
-          bodyOptGroup.label = "Body Properties";
-          for (const propName of Object.keys(schema.properties)) {
+          bodyOptGroup.label = "Body Properties (Schema)";
+          allFields.forEach(f => {
             const opt = document.createElement("option");
-            opt.value = propName;
-            opt.textContent = `${propName} (body)`;
+            opt.value = f.path;
+            opt.textContent = `${f.path} (${f.type})`;
             opt.dataset.location = "body";
+            opt.dataset.type = f.type;
             bodyOptGroup.appendChild(opt);
-          }
+          });
           targetSel.appendChild(bodyOptGroup);
         }
         // Query params
@@ -5814,14 +5818,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       populateFieldOptions(selPrompt);
       populateFieldOptions(selManual);
 
-      if (selManual) {
-        const customOpt = document.createElement("option");
-        customOpt.value = "__custom__";
-        customOpt.textContent = "➕ Enter Custom Field Name...";
-        selManual.appendChild(customOpt);
-      }
-
-      // Pre-select field
+      // Pre-select field from actual options
       if (prefilledField) {
         if (selPrompt) {
           const match = [...selPrompt.options].find(o => o.value === prefilledField);
@@ -5829,12 +5826,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         }
         if (selManual) {
           const match = [...selManual.options].find(o => o.value === prefilledField);
-          if (match) {
-            selManual.value = prefilledField;
-          } else {
-            selManual.value = "__custom__";
-            document.getElementById("custom-field-name-input").value = prefilledField;
-          }
+          if (match) selManual.value = prefilledField;
         }
       } else {
         if (selPrompt && selPrompt.options.length > 0) selPrompt.selectedIndex = 0;
@@ -5842,6 +5834,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       }
 
       onCustomFieldSelectChange();
+      onPromptTargetFieldSelectChange();
 
       // Reset Tab 1 (Prompt Generator)
       const promptInput = document.getElementById("prompt-test-instruction-input");
@@ -5904,13 +5897,100 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       const probes = synthesizePromptTestCases(prompt, fieldName, location, op, resolved);
       window.__generatedPromptProbes = probes;
 
+      // Sync Target Field dropdown if probe auto-resolved a specific field
+      if (probes && probes.length > 0 && probes[0].field && selField) {
+        const matchingOpt = [...selField.options].find(o => o.value === probes[0].field);
+        if (matchingOpt) {
+          selField.value = probes[0].field;
+          onPromptTargetFieldSelectChange();
+        }
+      }
+
       renderPromptGeneratedProbesTable(probes);
     }
 
     function synthesizePromptTestCases(prompt, fieldName, location, op, schema) {
       const pLower = prompt.toLowerCase();
-      const propSchema = (schema && schema.properties && schema.properties[fieldName]) ? resolveRef(schema.properties[fieldName]) : {};
       const probes = [];
+
+      // Resolve schema fields to identify real properties
+      const { allFields } = getRouteSchemaFieldList(op);
+      let targetField = fieldName;
+      let targetLoc = location;
+      let targetType = "string";
+
+      if (allFields && allFields.length > 0) {
+        const initField = allFields.find(f => f.path === fieldName);
+        if (initField) targetType = initField.type;
+
+        // Auto-match if prompt mentions any actual schema field
+        for (const f of allFields) {
+          const fNorm = f.name.toLowerCase().replace(/[\s\-_]+/g, '');
+          const pathNorm = f.path.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '');
+          if (pLower.includes(f.name.toLowerCase()) || pLower.includes(fNorm) || pLower.includes(pathNorm)) {
+            targetField = f.path;
+            targetLoc = 'body';
+            targetType = f.type;
+            break;
+          }
+        }
+      }
+
+      // Check for exact email in prompt (e.g. "user email should be exactly asw@gmail.com")
+      const emailMatch = prompt.match(/\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i);
+      if (emailMatch) {
+        const emailVal = emailMatch[1];
+        if (!targetField.toLowerCase().includes('email')) {
+          const emailField = (allFields || []).find(f => f.name.toLowerCase().includes('email') || f.path.toLowerCase().includes('email'));
+          if (emailField) {
+            targetField = emailField.path;
+            targetLoc = 'body';
+            targetType = 'string';
+          }
+        }
+
+        probes.push({
+          field: targetField,
+          location: targetLoc,
+          category: `Static Value: Exact Required Email ('${emailVal}')`,
+          valType: 'string',
+          value: emailVal,
+          expected: 200,
+          desc: `Accepts required exact email '${emailVal}' for '${targetField}'`,
+          selected: true
+        });
+        probes.push({
+          field: targetField,
+          location: targetLoc,
+          category: `Boundary: Non-Matching Email Difference`,
+          valType: 'string',
+          value: `mismatch_${emailVal}`,
+          expected: 422,
+          desc: `Rejects email differing from required exact value '${emailVal}'`,
+          selected: true
+        });
+        probes.push({
+          field: targetField,
+          location: targetLoc,
+          category: `Format: Malformed Email Syntax`,
+          valType: 'string',
+          value: emailVal.replace('@', '_at_'),
+          expected: 422,
+          desc: `Rejects malformed email missing '@' delimiter`,
+          selected: true
+        });
+        probes.push({
+          field: targetField,
+          location: targetLoc,
+          category: `Boundary: Empty Required Field`,
+          valType: 'string',
+          value: '',
+          expected: 422,
+          desc: `Rejects empty string for required field '${targetField}'`,
+          selected: true
+        });
+        return probes;
+      }
 
       // 1. Numeric Range / Bounds (e.g. "within 20 to 50", "between 10 and 20", "20 to 20")
       const rangeMatch = prompt.match(/(?:within|between|range|from)?\s*(-?\d+(?:\.\d+)?)\s*(?:to|-|and)\s*(-?\d+(?:\.\d+)?)/i);
@@ -5921,8 +6001,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
         if (min === max) {
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Boundary: Underflow (< ${min})`,
             valType: 'number',
             value: String(min - 1),
@@ -5931,8 +6011,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
             selected: true
           });
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Boundary: Exact Required (${min})`,
             valType: 'number',
             value: String(min),
@@ -5941,8 +6021,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
             selected: true
           });
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Boundary: Overflow (> ${max})`,
             valType: 'number',
             value: String(max + 1),
@@ -5952,8 +6032,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           });
         } else {
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Boundary: Below Min (< ${min})`,
             valType: 'number',
             value: String(min - 1),
@@ -5962,8 +6042,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
             selected: true
           });
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Boundary: Exact Min Edge (${min})`,
             valType: 'number',
             value: String(min),
@@ -5972,8 +6052,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
             selected: true
           });
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Boundary: Exact Max Edge (${max})`,
             valType: 'number',
             value: String(max),
@@ -5982,8 +6062,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
             selected: true
           });
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Boundary: Above Max (> ${max})`,
             valType: 'number',
             value: String(max + 1),
@@ -6010,8 +6090,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       if (enumValues.length > 0) {
         const firstEnum = enumValues[0];
         probes.push({
-          field: fieldName,
-          location: location,
+          field: targetField,
+          location: targetLoc,
           category: `Enum: Valid Member ('${firstEnum}')`,
           valType: 'string',
           value: firstEnum,
@@ -6021,8 +6101,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         });
         const invalidVal = "INVALID_" + firstEnum.toUpperCase();
         probes.push({
-          field: fieldName,
-          location: location,
+          field: targetField,
+          location: targetLoc,
           category: `Enum: Disallowed Member`,
           valType: 'string',
           value: invalidVal,
@@ -6033,8 +6113,8 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         const caseVal = firstEnum === firstEnum.toUpperCase() ? firstEnum.toLowerCase() : firstEnum.toUpperCase();
         if (caseVal !== firstEnum) {
           probes.push({
-            field: fieldName,
-            location: location,
+            field: targetField,
+            location: targetLoc,
             category: `Enum: Case Casing Mismatch`,
             valType: 'string',
             value: caseVal,
@@ -6049,23 +6129,23 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       // 3. Negative / Underflow
       if (pLower.includes('negative') || pLower.includes('subzero') || pLower.includes('less than 0') || pLower.includes('< 0')) {
         probes.push({
-          field: fieldName,
-          location: location,
+          field: targetField,
+          location: targetLoc,
           category: `Boundary: Negative Disallowed`,
           valType: 'number',
           value: "-1",
           expected: 422,
-          desc: `Rejects negative value (-1) for '${fieldName}'`,
+          desc: `Rejects negative value (-1) for '${targetField}'`,
           selected: true
         });
         probes.push({
-          field: fieldName,
-          location: location,
+          field: targetField,
+          location: targetLoc,
           category: `Boundary: Extreme Negative Underflow`,
           valType: 'number',
           value: "-99999",
           expected: 422,
-          desc: `Rejects extreme negative underflow (-99999) for '${fieldName}'`,
+          desc: `Rejects extreme negative underflow (-99999) for '${targetField}'`,
           selected: true
         });
         return probes;
@@ -6074,65 +6154,70 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       // 4. Whitespace / Empty String
       if (pLower.includes('whitespace') || pLower.includes('empty') || pLower.includes('blank')) {
         probes.push({
-          field: fieldName,
-          location: location,
+          field: targetField,
+          location: targetLoc,
           category: `Boundary: Empty String`,
           valType: 'string',
           value: "",
           expected: 422,
-          desc: `Rejects empty string ("") for '${fieldName}'`,
+          desc: `Rejects empty string ("") for '${targetField}'`,
           selected: true
         });
         probes.push({
-          field: fieldName,
-          location: location,
+          field: targetField,
+          location: targetLoc,
           category: `Boundary: Whitespace Only`,
           valType: 'string',
           value: "     ",
           expected: 422,
-          desc: `Rejects whitespace-only string for '${fieldName}'`,
+          desc: `Rejects whitespace-only string for '${targetField}'`,
           selected: true
         });
         return probes;
       }
 
-      // 5. Static Value Match (e.g. "static value 'STANDARD'", "should be 'VIP'")
-      const staticMatch = prompt.match(/(?:static string value|static value|exact value|should be|must be|equals)\s*["']?([^"'\s,]+)["']?/i);
+      // 5. Static Value Match (e.g. "static value 'STANDARD'", "should be exactly 'VIP'")
+      const staticMatch = prompt.match(/(?:static\s+(?:string\s+)?value|exact\s+value|should\s*be\s*exactly|must\s*be\s*exactly|should\s*be|must\s*be|equals?|to\s*be|is)\s*[:=]?\s*["']?([^"',;\n]+?)["']?(?:$|\s+in\s+value|\s+and|\.)/i);
       if (staticMatch) {
-        const val = staticMatch[1];
-        probes.push({
-          field: fieldName,
-          location: location,
-          category: `Static Value: Required ('${val}')`,
-          valType: 'string',
-          value: val,
-          expected: 200,
-          desc: `Accepts required static value '${val}' for '${fieldName}'`,
-          selected: true
-        });
-        probes.push({
-          field: fieldName,
-          location: location,
-          category: `Static Value: Disallowed Difference`,
-          valType: 'string',
-          value: val + "_mismatch",
-          expected: 422,
-          desc: `Rejects value differing from required static value '${val}'`,
-          selected: true
-        });
-        return probes;
+        let val = staticMatch[1].trim().replace(/\s+in\s+value$/i, '').trim();
+        if (val && !['a', 'an', 'the'].includes(val.toLowerCase())) {
+          const isNum = targetType === 'integer' || targetType === 'number' || (!isNaN(Number(val)) && val !== '');
+          const valType = isNum ? 'number' : 'string';
+          probes.push({
+            field: targetField,
+            location: targetLoc,
+            category: `Static Value: Required ('${val}')`,
+            valType: valType,
+            value: val,
+            expected: 200,
+            desc: `Accepts required static value '${val}' for '${targetField}'`,
+            selected: true
+          });
+          const mismatchVal = isNum ? String(Number(val) + 1 || 999) : `${val}_mismatch`;
+          probes.push({
+            field: targetField,
+            location: targetLoc,
+            category: `Static Value: Disallowed Difference`,
+            valType: valType,
+            value: mismatchVal,
+            expected: 422,
+            desc: `Rejects value differing from required static value '${val}'`,
+            selected: true
+          });
+          return probes;
+        }
       }
 
       // Fallback to keyword synthesizer
       const single = synthesizeProbeWithKeywords(prompt, op, schema);
       probes.push({
-        field: single.field || fieldName,
-        location: single.location || location,
+        field: single.field || targetField,
+        location: single.location || targetLoc,
         category: single.category || "Custom Boundary",
-        valType: single.valType || "string",
+        valType: single.valType || targetType || "string",
         value: single.value || "sample_probe",
         expected: single.expected || 422,
-        desc: single.desc || `Test probe for '${fieldName}'`,
+        desc: single.desc || `Test probe for '${targetField}'`,
         selected: true
       });
       return probes;
@@ -6558,7 +6643,6 @@ Synthesize a single JSON object with these exact keys:
       if (!probeData) return;
 
       const sel = document.getElementById("custom-field-select");
-      const customNameInput = document.getElementById("custom-field-name-input");
       const locSelect = document.getElementById("custom-field-location");
       const catInput = document.getElementById("custom-category-input");
       const statusSelect = document.getElementById("custom-expected-status");
@@ -6566,23 +6650,12 @@ Synthesize a single JSON object with these exact keys:
       const valInput = document.getElementById("custom-val-input");
 
       // Field selection
-      let found = false;
       if (sel) {
         for (let i = 0; i < sel.options.length; i++) {
           if (sel.options[i].value === probeData.field) {
             sel.selectedIndex = i;
-            found = true;
             break;
           }
-        }
-        if (!found) {
-          sel.value = "__custom__";
-          if (customNameInput) {
-            customNameInput.value = probeData.field;
-            customNameInput.style.display = "block";
-          }
-        } else {
-          if (customNameInput) customNameInput.style.display = "none";
         }
       }
 
@@ -6601,7 +6674,7 @@ Synthesize a single JSON object with these exact keys:
       if (valInput) valInput.value = probeData.value || "";
 
       // Highlight all auto-filled fields with glowing animation
-      const fieldsToHighlight = [sel, customNameInput, locSelect, catInput, statusSelect, descInput, valInput].filter(Boolean);
+      const fieldsToHighlight = [sel, locSelect, catInput, statusSelect, descInput, valInput].filter(Boolean);
       fieldsToHighlight.forEach(el => {
         el.classList.remove("ai-field-highlight");
         void el.offsetWidth; // Force reflow
@@ -6611,18 +6684,21 @@ Synthesize a single JSON object with these exact keys:
 
     function onCustomFieldSelectChange() {
       const sel = document.getElementById("custom-field-select");
-      const customInput = document.getElementById("custom-field-name-input");
       const locSelect = document.getElementById("custom-field-location");
+      if (!sel || !locSelect) return;
+      const selectedOpt = sel.options[sel.selectedIndex];
+      if (selectedOpt && selectedOpt.dataset.location) {
+        locSelect.value = selectedOpt.dataset.location;
+      }
+    }
 
-      if (sel.value === "__custom__") {
-        customInput.style.display = "block";
-        customInput.focus();
-      } else {
-        customInput.style.display = "none";
-        const selectedOpt = sel.options[sel.selectedIndex];
-        if (selectedOpt && selectedOpt.dataset.location) {
-          locSelect.value = selectedOpt.dataset.location;
-        }
+    function onPromptTargetFieldSelectChange() {
+      const sel = document.getElementById("prompt-target-field-select");
+      const locSelect = document.getElementById("prompt-target-location-select");
+      if (!sel || !locSelect) return;
+      const selectedOpt = sel.options[sel.selectedIndex];
+      if (selectedOpt && selectedOpt.dataset.location) {
+        locSelect.value = selectedOpt.dataset.location;
       }
     }
 
@@ -6645,8 +6721,7 @@ Synthesize a single JSON object with these exact keys:
       if (!op) return;
 
       const sel = document.getElementById("custom-field-select");
-      const customNameInput = document.getElementById("custom-field-name-input");
-      let fieldName = sel.value === "__custom__" ? customNameInput.value.trim() : sel.value;
+      const fieldName = (sel && sel.value) ? sel.value.trim() : "";
 
       const errEl = document.getElementById("custom-val-error");
       errEl.style.display = "none";
