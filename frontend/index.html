@@ -2309,7 +2309,7 @@
             <thead>
               <tr>
                 <th style="width: 32px; text-align: center;">Active</th>
-                <th style="width: 190px;">Field Name</th>
+                <th style="width: 215px;">Schema Field</th>
                 <th>Static Value</th>
                 <th style="width: 95px;">Type</th>
                 <th style="width: 32px; text-align: center;"></th>
@@ -2341,7 +2341,7 @@
             <thead>
               <tr>
                 <th style="width: 32px; text-align: center;">Active</th>
-                <th style="width: 240px;">Array Field Name</th>
+                <th style="width: 230px;">Schema Array Field</th>
                 <th>Exact Item Count</th>
                 <th style="width: 32px; text-align: center;"></th>
               </tr>
@@ -4167,11 +4167,83 @@
       });
     }
 
+    function getRouteSchemaFieldList(op) {
+      if (!op) return { allFields: [], arrayFields: [] };
+      const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      if (!rawSchema) return { allFields: [], arrayFields: [] };
+      const rootSchema = resolveRef(rawSchema);
+
+      const allFields = [];
+      const arrayFields = [];
+
+      function traverse(schema, prefix = '') {
+        if (!schema) return;
+        schema = resolveRef(schema);
+
+        if (schema.type === 'object' || schema.properties) {
+          const props = schema.properties || {};
+          for (const [propName, rawPropSchema] of Object.entries(props)) {
+            const propSchema = resolveRef(rawPropSchema);
+            const fullPath = prefix ? `${prefix}.${propName}` : propName;
+            let propType = propSchema.type;
+            if (!propType) {
+              if (propSchema.enum) propType = 'string';
+              else if (propSchema.properties) propType = 'object';
+              else if (propSchema.items) propType = 'array';
+              else propType = 'string';
+            }
+
+            allFields.push({
+              path: fullPath,
+              name: propName,
+              type: propType,
+              enum: Array.isArray(propSchema.enum) ? propSchema.enum : null
+            });
+
+            if (propType === 'array') {
+              arrayFields.push({
+                path: fullPath,
+                name: propName
+              });
+              if (propSchema.items) {
+                const itemSchema = resolveRef(propSchema.items);
+                if (itemSchema.type === 'object' || itemSchema.properties) {
+                  traverse(itemSchema, `${fullPath}[]`);
+                }
+              }
+            } else if (propType === 'object' && propSchema.properties) {
+              traverse(propSchema, fullPath);
+            }
+          }
+        }
+      }
+
+      traverse(rootSchema);
+      return { allFields, arrayFields };
+    }
+
     function addRandomizerStaticOverrideRow(initial = { field: '', value: '', type: 'string', active: true }) {
       const tbody = document.getElementById("randomizer-static-overrides-body");
       if (!tbody) return;
       const emptyRow = tbody.querySelector(".empty-row");
       if (emptyRow) emptyRow.remove();
+
+      const op = operations[selectedOpIndex];
+      const { allFields } = getRouteSchemaFieldList(op);
+
+      const isKnownField = Boolean(initial.field && allFields.some(f => f.path === initial.field));
+      const isCustom = Boolean(initial.field && !isKnownField) || (!initial.field && allFields.length === 0);
+
+      // Build dropdown options
+      let optionsHtml = '';
+      if (!initial.field && allFields.length > 0) {
+        optionsHtml += `<option value="" disabled selected>-- Select Field from Schema --</option>`;
+      }
+      allFields.forEach(f => {
+        const isSel = f.path === initial.field;
+        optionsHtml += `<option value="${escapeHtml(f.path)}" data-type="${escapeHtml(f.type)}" ${isSel ? 'selected' : ''}>${escapeHtml(f.path)} (${escapeHtml(f.type)})</option>`;
+      });
+      optionsHtml += `<option value="__custom__" ${isCustom ? 'selected' : ''}>➕ Custom Field...</option>`;
 
       const tr = document.createElement("tr");
       tr.className = "randomizer-override-row";
@@ -4180,7 +4252,10 @@
           <input type="checkbox" class="override-active-cb" ${initial.active !== false ? 'checked' : ''}>
         </td>
         <td>
-          <input type="text" class="kv-input override-field-input" placeholder="e.g. status or user.role" value="${escapeHtml(initial.field || '')}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem;">
+          <select class="kv-input override-field-select" onchange="onOverrideFieldSelectChange(this)" style="font-size: 0.76rem; padding: 0.2rem 0.4rem; width: 100%;">
+            ${optionsHtml}
+          </select>
+          <input type="text" class="kv-input override-field-custom-input" placeholder="Type custom field name..." value="${escapeHtml(isCustom ? (initial.field || '') : '')}" style="display: ${isCustom ? 'block' : 'none'}; margin-top: 0.25rem; font-size: 0.74rem; padding: 0.18rem 0.35rem;">
         </td>
         <td>
           <input type="text" class="kv-input override-value-input" placeholder="Value (e.g. confirmed, 42, true)" value="${escapeHtml(initial.value !== undefined ? String(initial.value) : '')}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem;">
@@ -4198,6 +4273,47 @@
         </td>
       `;
       tbody.appendChild(tr);
+
+      // Auto-sync type if adding a fresh row
+      if (!initial.field && allFields.length > 0) {
+        const selEl = tr.querySelector(".override-field-select");
+        if (selEl && allFields[0]) {
+          selEl.value = allFields[0].path;
+          onOverrideFieldSelectChange(selEl);
+        }
+      }
+    }
+
+    function onOverrideFieldSelectChange(selectEl) {
+      const tr = selectEl.closest("tr");
+      if (!tr) return;
+      const customInput = tr.querySelector(".override-field-custom-input");
+      const typeSelect = tr.querySelector(".override-type-select");
+
+      if (selectEl.value === "__custom__") {
+        if (customInput) {
+          customInput.style.display = "block";
+          customInput.focus();
+        }
+      } else {
+        if (customInput) {
+          customInput.style.display = "none";
+        }
+        // Auto-select type based on schema field type
+        const selectedOpt = selectEl.options[selectEl.selectedIndex];
+        const dataType = selectedOpt ? selectedOpt.dataset.type : "";
+        if (typeSelect && dataType) {
+          if (dataType === 'integer' || dataType === 'number') {
+            typeSelect.value = "number";
+          } else if (dataType === 'boolean') {
+            typeSelect.value = "boolean";
+          } else if (dataType === 'array' || dataType === 'object') {
+            typeSelect.value = "json";
+          } else {
+            typeSelect.value = "string";
+          }
+        }
+      }
     }
 
     function removeRandomizerStaticOverrideRow(btn) {
@@ -4228,6 +4344,23 @@
       const emptyRow = tbody.querySelector(".empty-row");
       if (emptyRow) emptyRow.remove();
 
+      const op = operations[selectedOpIndex];
+      const { arrayFields, allFields } = getRouteSchemaFieldList(op);
+      const candidateFields = arrayFields.length > 0 ? arrayFields : allFields;
+
+      const isKnownField = Boolean(initial.field && candidateFields.some(f => f.path === initial.field));
+      const isCustom = Boolean(initial.field && !isKnownField) || (!initial.field && candidateFields.length === 0);
+
+      let optionsHtml = '';
+      if (!initial.field && candidateFields.length > 0) {
+        optionsHtml += `<option value="" disabled selected>-- Select Array Field --</option>`;
+      }
+      candidateFields.forEach(f => {
+        const isSel = f.path === initial.field;
+        optionsHtml += `<option value="${escapeHtml(f.path)}" ${isSel ? 'selected' : ''}>${escapeHtml(f.path)}</option>`;
+      });
+      optionsHtml += `<option value="__custom__" ${isCustom ? 'selected' : ''}>➕ Custom Array Field...</option>`;
+
       const tr = document.createElement("tr");
       tr.className = "randomizer-array-row";
       tr.innerHTML = `
@@ -4235,7 +4368,10 @@
           <input type="checkbox" class="array-rule-active-cb" ${initial.active !== false ? 'checked' : ''}>
         </td>
         <td>
-          <input type="text" class="kv-input array-rule-field-input" placeholder="e.g. items or orders.line_items" value="${escapeHtml(initial.field || '')}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem;">
+          <select class="kv-input array-rule-field-select" onchange="onArrayRuleFieldSelectChange(this)" style="font-size: 0.76rem; padding: 0.2rem 0.4rem; width: 100%;">
+            ${optionsHtml}
+          </select>
+          <input type="text" class="kv-input array-rule-custom-input" placeholder="Type custom array name..." value="${escapeHtml(isCustom ? (initial.field || '') : '')}" style="display: ${isCustom ? 'block' : 'none'}; margin-top: 0.25rem; font-size: 0.74rem; padding: 0.18rem 0.35rem;">
         </td>
         <td>
           <input type="number" min="0" max="50" class="kv-input array-rule-count-input" placeholder="2" value="${parseInt(initial.count, 10) || 2}" style="font-size: 0.76rem; padding: 0.2rem 0.4rem; width: 100%;">
@@ -4245,6 +4381,31 @@
         </td>
       `;
       tbody.appendChild(tr);
+
+      // Auto-select first array candidate if adding a fresh row
+      if (!initial.field && candidateFields.length > 0) {
+        const selEl = tr.querySelector(".array-rule-field-select");
+        if (selEl && candidateFields[0]) {
+          selEl.value = candidateFields[0].path;
+          onArrayRuleFieldSelectChange(selEl);
+        }
+      }
+    }
+
+    function onArrayRuleFieldSelectChange(selectEl) {
+      const tr = selectEl.closest("tr");
+      if (!tr) return;
+      const customInput = tr.querySelector(".array-rule-custom-input");
+      if (selectEl.value === "__custom__") {
+        if (customInput) {
+          customInput.style.display = "block";
+          customInput.focus();
+        }
+      } else {
+        if (customInput) {
+          customInput.style.display = "none";
+        }
+      }
     }
 
     function removeRandomizerArrayRuleRow(btn) {
@@ -4263,7 +4424,9 @@
       const staticOverrides = [];
       document.querySelectorAll("#randomizer-static-overrides-body tr.randomizer-override-row").forEach(tr => {
         const active = tr.querySelector(".override-active-cb")?.checked !== false;
-        const field = tr.querySelector(".override-field-input")?.value.trim();
+        const selVal = tr.querySelector(".override-field-select")?.value;
+        const customVal = tr.querySelector(".override-field-custom-input")?.value.trim();
+        const field = (selVal === "__custom__" ? customVal : selVal) || "";
         const value = tr.querySelector(".override-value-input")?.value;
         const type = tr.querySelector(".override-type-select")?.value || "string";
         if (field) {
@@ -4274,7 +4437,9 @@
       const arrayRules = [];
       document.querySelectorAll("#randomizer-array-rules-body tr.randomizer-array-row").forEach(tr => {
         const active = tr.querySelector(".array-rule-active-cb")?.checked !== false;
-        const field = tr.querySelector(".array-rule-field-input")?.value.trim();
+        const selVal = tr.querySelector(".array-rule-field-select")?.value;
+        const customVal = tr.querySelector(".array-rule-custom-input")?.value.trim();
+        const field = (selVal === "__custom__" ? customVal : selVal) || "";
         const count = parseInt(tr.querySelector(".array-rule-count-input")?.value, 10) || 2;
         if (field) {
           arrayRules.push({ field, count, active });
