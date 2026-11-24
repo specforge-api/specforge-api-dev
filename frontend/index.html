@@ -2197,20 +2197,25 @@
 
         <!-- Prompt Input -->
         <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
             <label style="font-size: 0.78rem; font-weight: 700;">
               💬 Test Generation Prompt / Natural Language Rule
             </label>
             <span style="font-size: 0.7rem; color: var(--text-muted);">Synthesizes multiple boundary & edge test cases</span>
           </div>
-          <div style="display: flex; gap: 0.4rem;">
-            <input type="text" id="prompt-test-instruction-input" class="kv-input" style="flex: 1; font-size: 0.82rem;" placeholder="e.g. 'the field value should be within 20 to 50' or 'enums: [ACTIVE, PENDING]' or 'price cannot be negative'..." onkeydown="if(event.key==='Enter'){event.preventDefault();handleGeneratePromptTests();}">
-            <button type="button" id="btn-generate-prompt-tests" class="btn btn-outline" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap;" onclick="handleGeneratePromptTests()" title="Fast deterministic rule-based boundary compiler (0ms)">
-              ⚡ Generate Probes
-            </button>
-            <button type="button" id="btn-generate-prompt-tests-ai" class="btn btn-primary ai-btn-glow" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem;" onclick="handleGeneratePromptTestsWithAI()" title="Perform in-browser neural WebGPU inference with active AI model (Gemma 3 1B / SmolLM2)">
-              🧠 AI Neural Generate
-            </button>
+          <textarea id="prompt-test-instruction-input" class="kv-input" rows="3" style="width: 100%; font-size: 0.82rem; resize: vertical; min-height: 64px; line-height: 1.35; padding: 0.5rem;" placeholder="e.g. 'the field value should be within 20 to 50' or 'enums: [ACTIVE, PENDING]' or 'price cannot be negative'..." onkeydown="if((event.ctrlKey || event.metaKey) && event.key==='Enter'){event.preventDefault();handleGeneratePromptTests();}"></textarea>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; flex-wrap: wrap; gap: 0.4rem;">
+            <div style="font-size: 0.68rem; color: var(--text-muted);">
+              Press <kbd style="background:var(--secondary);border:1px solid var(--border);border-radius:3px;padding:0.1rem 0.3rem;">Ctrl</kbd> + <kbd style="background:var(--secondary);border:1px solid var(--border);border-radius:3px;padding:0.1rem 0.3rem;">Enter</kbd> to quick-generate
+            </div>
+            <div style="display: flex; gap: 0.4rem;">
+              <button type="button" id="btn-generate-prompt-tests" class="btn btn-outline" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap;" onclick="handleGeneratePromptTests()" title="Fast deterministic rule-based boundary compiler (0ms)">
+                ⚡ Generate Probes
+              </button>
+              <button type="button" id="btn-generate-prompt-tests-ai" class="btn btn-primary ai-btn-glow" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem;" onclick="handleGeneratePromptTestsWithAI()" title="Perform in-browser neural WebGPU inference with active AI model (Gemma 3 1B / SmolLM2)">
+                🧠 AI Neural Generate
+              </button>
+            </div>
           </div>
           <div id="prompt-ai-inference-status" style="display: none; font-size: 0.74rem; color: #a855f7; margin-top: 0.4rem; font-weight: 600;">
             <!-- Dynamic model loading & inference status -->
