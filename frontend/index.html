@@ -4472,7 +4472,152 @@
       closeAiRandomizerRulesModal();
     }
 
-    function applyRandomizerRulesToPayload(payload, rules) {
+    function extractAndApplyNaturalLanguageInstructions(payload, prompt, schema) {
+      if (!payload || typeof payload !== 'object' || !prompt || typeof prompt !== 'string') return payload;
+      const pText = prompt.trim();
+      if (!pText) return payload;
+      const props = (schema && schema.properties) ? schema.properties : {};
+
+      function findMatchingKey(targetName) {
+        if (!targetName) return null;
+        const clean = targetName.toLowerCase().trim().replace(/[\s\-_]+/g, '');
+        if (!clean) return null;
+        // 1. Direct exact match in payload keys
+        for (const k of Object.keys(payload)) {
+          if (k.toLowerCase().replace(/[\s\-_]+/g, '') === clean) return k;
+        }
+        // 2. Direct exact match in schema props
+        for (const k of Object.keys(props)) {
+          if (k.toLowerCase().replace(/[\s\-_]+/g, '') === clean) return k;
+        }
+        // 3. Substring match
+        for (const k of Object.keys(payload)) {
+          const kNorm = k.toLowerCase().replace(/[\s\-_]+/g, '');
+          if (kNorm.includes(clean) || clean.includes(kNorm)) return k;
+        }
+        for (const k of Object.keys(props)) {
+          const kNorm = k.toLowerCase().replace(/[\s\-_]+/g, '');
+          if (kNorm.includes(clean) || clean.includes(kNorm)) return k;
+        }
+        return null;
+      }
+
+      function assignValue(keyName, rawVal) {
+        const matchedKey = findMatchingKey(keyName);
+        if (!matchedKey) return false;
+        const propMeta = props[matchedKey] || {};
+        const targetType = propMeta.type || typeof payload[matchedKey];
+        let cleanedVal = String(rawVal).trim().replace(/^["']|["']$/g, '');
+        if (['a', 'an', 'the'].includes(cleanedVal.toLowerCase())) return false;
+
+        if (targetType === 'number' || targetType === 'integer') {
+          const num = parseFloat(cleanedVal);
+          if (!isNaN(num)) {
+            payload[matchedKey] = (targetType === 'integer') ? Math.round(num) : num;
+            return true;
+          }
+        } else if (targetType === 'boolean') {
+          payload[matchedKey] = (cleanedVal.toLowerCase() === 'true' || cleanedVal === '1');
+          return true;
+        } else {
+          payload[matchedKey] = cleanedVal;
+          return true;
+        }
+        return false;
+      }
+
+      // Split prompt into distinct clauses
+      const clauses = pText
+        .split(/(?:\r?\n|;|\.\s+|\s+(?:and|also|with)\s+)/i)
+        .map(s => s.trim().replace(/\.$/, ''))
+        .filter(Boolean);
+
+      let emailHandled = false;
+      const emailRegex = /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i;
+
+      for (const clause of clauses) {
+        // 1. Array count sizing: e.g. "4 items" or "items count 3" or "generate 5 items"
+        const arrCountMatch1 = clause.match(/^(?:(?:include|create|add|generate|set)?\s*)?(\d+)\s+([a-zA-Z0-9_-]+)$/i);
+        const arrCountMatch2 = clause.match(/^([a-zA-Z0-9_-]+)\s+(?:count|length|size)\s*(?:should\s*be\s*exactly|must\s*be\s*exactly|should\s*be|must\s*be|to\s*be|equals?|is|=|:)\s*(\d+)$/i);
+
+        if (arrCountMatch1 || arrCountMatch2) {
+          const count = parseInt(arrCountMatch1 ? arrCountMatch1[1] : arrCountMatch2[2], 10);
+          const targetArr = arrCountMatch1 ? arrCountMatch1[2] : arrCountMatch2[1];
+          const matchedArrKey = findMatchingKey(targetArr);
+          if (matchedArrKey && Array.isArray(payload[matchedArrKey]) && count >= 0 && count <= 50) {
+            const arr = payload[matchedArrKey];
+            if (arr.length < count && arr.length > 0) {
+              while (arr.length < count) arr.push(JSON.parse(JSON.stringify(arr[0])));
+            } else if (arr.length > count) {
+              payload[matchedArrKey] = arr.slice(0, count);
+            }
+            continue;
+          }
+        }
+
+        // 2. Email in clause
+        const emailMatch = clause.match(emailRegex);
+        if (emailMatch) {
+          const targetEmail = emailMatch[1];
+          const withoutEmail = clause.replace(emailRegex, '')
+            .replace(/^(?:set|use|put)\s+/i, '')
+            .replace(/(?:should\s*be\s*exactly|must\s*be\s*exactly|should\s*be|must\s*be|to\s*be|equals?|is|=|:|->|as|for)\s*$/i, '')
+            .trim();
+          const matchedKey = findMatchingKey(withoutEmail) || findMatchingKey('customer_email') || findMatchingKey('email') || Object.keys(payload).find(k => k.toLowerCase().includes('email'));
+          if (matchedKey) {
+            payload[matchedKey] = targetEmail;
+            emailHandled = true;
+          }
+          continue;
+        }
+
+        // 3. Domain constraints
+        const domainMatch = clause.match(/(?:domain|ending\s+in|ending\s+with)\s+[@]?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+        if (domainMatch) {
+          const targetDomain = domainMatch[1];
+          const emailField = findMatchingKey('customer_email') || findMatchingKey('email') || Object.keys(payload).find(k => k.toLowerCase().includes('email'));
+          if (emailField) {
+            const currentVal = String(payload[emailField] || 'user@example.com');
+            const userPart = currentVal.split('@')[0] || 'user';
+            payload[emailField] = `${userPart}@${targetDomain}`;
+            emailHandled = true;
+          }
+          continue;
+        }
+
+        // 4. "use <val> as/for <key>"
+        const useMatch = clause.match(/^(?:use|put)\s+["']?([^"',;\.\n]+?)["']?\s+(?:as|for)\s+([a-zA-Z0-9_\s-]+)$/i);
+        if (useMatch) {
+          assignValue(useMatch[2], useMatch[1]);
+          continue;
+        }
+
+        // 5. Key-Value assignment: "<key> should be / must be / is / = / : <val>"
+        const connector = /\s*(?:should\s*be\s*exactly|must\s*be\s*exactly|should\s*be|must\s*be|to\s*be|equals?|is|=|:|->)\s*/i;
+        const parts = clause.split(connector);
+        if (parts.length >= 2) {
+          const rawKey = parts[0].replace(/^(?:set|also)\s+/i, '').trim();
+          const rawVal = parts.slice(1).join(' ').trim();
+          assignValue(rawKey, rawVal);
+          continue;
+        }
+      }
+
+      // Fallback: If prompt had an email that wasn't assigned
+      if (!emailHandled) {
+        const fallbackEmail = pText.match(emailRegex);
+        if (fallbackEmail) {
+          const emailField = findMatchingKey('customer_email') || findMatchingKey('email') || Object.keys(payload).find(k => k.toLowerCase().includes('email'));
+          if (emailField) {
+            payload[emailField] = fallbackEmail[1];
+          }
+        }
+      }
+
+      return payload;
+    }
+
+    function applyRandomizerRulesToPayload(payload, rules, optSchema) {
       if (!payload || typeof payload !== 'object' || !rules || rules.enabled === false) {
         return payload;
       }
@@ -4489,6 +4634,18 @@
           curr = curr[p];
         }
         curr[parts[parts.length - 1]] = val;
+      }
+
+      // 0. Natural language instructions from custom prompt
+      if (rules.customPrompt && typeof rules.customPrompt === 'string' && rules.customPrompt.trim()) {
+        try {
+          const op = operations[selectedOpIndex];
+          const rawSchema = op?.raw?.requestBody?.content?.['application/json']?.schema;
+          const targetSchema = optSchema || (rawSchema ? resolveRef(rawSchema) : null);
+          payload = extractAndApplyNaturalLanguageInstructions(payload, rules.customPrompt, targetSchema);
+        } catch (e) {
+          console.warn("Could not apply natural language instructions:", e);
+        }
       }
 
       // 1. Array sizing rules
@@ -4544,7 +4701,7 @@
       const resolved = resolveRef(rawSchema);
       const rules = collectRandomizerModalRules();
       let sample = generateSmartSemanticMock(resolved);
-      sample = applyRandomizerRulesToPayload(sample, rules);
+      sample = applyRandomizerRulesToPayload(sample, rules, resolved);
       const previewBox = document.getElementById("randomizer-preview-box");
       if (previewBox) {
         previewBox.textContent = JSON.stringify(sample, null, 2);
@@ -4907,7 +5064,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
         // Apply persistent route randomizer rules (custom overrides & array sizing)
         const currentRules = getCurrentRouteRandomizerRules();
-        payload = applyRandomizerRulesToPayload(payload, currentRules);
+        payload = applyRandomizerRulesToPayload(payload, currentRules, resolved);
 
         // Safely write to DOM textarea ONLY - Zero filesystem or OS access
         if (box) {
@@ -4926,7 +5083,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         let fallback = generateSmartSemanticMock(resolved);
         try {
           const currentRules = getCurrentRouteRandomizerRules();
-          fallback = applyRandomizerRulesToPayload(fallback, currentRules);
+          fallback = applyRandomizerRulesToPayload(fallback, currentRules, resolved);
         } catch {}
         if (box) {
           box.value = JSON.stringify(fallback, null, 2);
