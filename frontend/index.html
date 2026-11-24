@@ -5965,11 +5965,19 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         const initField = allFields.find(f => f.path === fieldName);
         if (initField) targetType = initField.type;
 
+        // Sort allFields so that non-arrays and longer/leaf paths are checked before parent container arrays
+        const sortedFields = [...allFields].sort((a, b) => {
+          const aScore = (a.type !== 'array' ? 100 : 0) + a.path.length;
+          const bScore = (b.type !== 'array' ? 100 : 0) + b.path.length;
+          return bScore - aScore;
+        });
+
         // Auto-match if prompt mentions any actual schema field
-        for (const f of allFields) {
+        for (const f of sortedFields) {
           const fNorm = f.name.toLowerCase().replace(/[\s\-_]+/g, '');
           const pathNorm = f.path.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '');
-          if (pLower.includes(f.name.toLowerCase()) || pLower.includes(fNorm) || pLower.includes(pathNorm)) {
+          const cleanPrompt = pLower.replace(/[\s\-_\[\]\.]+/g, '');
+          if (cleanPrompt.includes(pathNorm) || pLower.includes(f.name.toLowerCase()) || cleanPrompt.includes(fNorm)) {
             targetField = f.path;
             targetLoc = 'body';
             targetType = f.type;
@@ -6119,11 +6127,11 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
       // 2. Enums (e.g. "enums ['ACTIVE', 'PENDING']", "enum: OPEN, CLOSED")
       let enumValues = [];
-      const bracketMatch = prompt.match(/\[([^\]]+)\]/);
+      const bracketMatch = prompt.match(/(?:enum|enums|allowed values|in)\s*:\s*\[([^\]]+)\]/i) || prompt.match(/\[([^\]]+)\]/);
       if (bracketMatch) {
         enumValues = bracketMatch[1].split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
       } else {
-        const enumWordMatch = prompt.match(/(?:enum|enums|values?)\s*[:=]?\s*([A-Za-z0-9_,\s'"]+)/i);
+        const enumWordMatch = prompt.match(/(?:enum|enums|allowed values)\s*[:=]\s*([A-Za-z0-9_,\s'"]+)/i);
         if (enumWordMatch) {
           enumValues = enumWordMatch[1].split(/[\s,]+/).map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
         }
@@ -6218,35 +6226,80 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         return probes;
       }
 
-      // 5. Static Value Match (e.g. "static value 'STANDARD'", "should be exactly 'VIP'")
-      const staticMatch = prompt.match(/(?:static\s+(?:string\s+)?value|exact\s+value|should\s*be\s*exactly|must\s*be\s*exactly|should\s*be|must\s*be|equals?|to\s*be|is)\s*[:=]?\s*["']?([^"',;\n]+?)["']?(?:$|\s+in\s+value|\s+and|\.)/i);
+      // 5. Static / Exact Value Match (e.g. "exact value 50", "should have exact value 50", "static value 'VIP'")
+      const staticMatch = prompt.match(/(?:static\s+(?:string\s+)?value|exact\s+value|should\s+(?:have\s+)?exact\s+value|must\s+(?:have\s+)?exact\s+value|should\s*be\s*exactly|must\s*be\s*exactly|should\s*be|must\s*be|equals?|to\s*be|is)\s*[:=]?\s*["']?([^"',;\n]+?)["']?(?:$|\s+in\s+value|\s+and|\.)/i);
       if (staticMatch) {
         let val = staticMatch[1].trim().replace(/\s+in\s+value$/i, '').trim();
         if (val && !['a', 'an', 'the'].includes(val.toLowerCase())) {
           const isNum = targetType === 'integer' || targetType === 'number' || (!isNaN(Number(val)) && val !== '');
-          const valType = isNum ? 'number' : 'string';
-          probes.push({
-            field: targetField,
-            location: targetLoc,
-            category: `Static Value: Required ('${val}')`,
-            valType: valType,
-            value: val,
-            expected: 200,
-            desc: `Accepts required static value '${val}' for '${targetField}'`,
-            selected: true
-          });
-          const mismatchVal = isNum ? String(Number(val) + 1 || 999) : `${val}_mismatch`;
-          probes.push({
-            field: targetField,
-            location: targetLoc,
-            category: `Static Value: Disallowed Difference`,
-            valType: valType,
-            value: mismatchVal,
-            expected: 422,
-            desc: `Rejects value differing from required static value '${val}'`,
-            selected: true
-          });
-          return probes;
+          if (isNum) {
+            const num = Number(val);
+            probes.push({
+              field: targetField,
+              location: targetLoc,
+              category: `Exact Value: Acceptance (${num})`,
+              valType: 'number',
+              value: String(num),
+              expected: 200,
+              desc: `Accepts required exact numeric value (${num}) for '${targetField}'`,
+              selected: true
+            });
+            probes.push({
+              field: targetField,
+              location: targetLoc,
+              category: `Boundary: Underflow (< ${num})`,
+              valType: 'number',
+              value: String(num - 1),
+              expected: 422,
+              desc: `Rejects value ${num - 1} below required exact value (${num}) for '${targetField}'`,
+              selected: true
+            });
+            probes.push({
+              field: targetField,
+              location: targetLoc,
+              category: `Boundary: Overflow (> ${num})`,
+              valType: 'number',
+              value: String(num + 1),
+              expected: 422,
+              desc: `Rejects value ${num + 1} exceeding required exact value (${num}) for '${targetField}'`,
+              selected: true
+            });
+            if (num > 1) {
+              probes.push({
+                field: targetField,
+                location: targetLoc,
+                category: `Boundary: Disallowed Zero`,
+                valType: 'number',
+                value: "0",
+                expected: 422,
+                desc: `Rejects zero (0) for required positive field '${targetField}'`,
+                selected: true
+              });
+            }
+            return probes;
+          } else {
+            probes.push({
+              field: targetField,
+              location: targetLoc,
+              category: `Static Value: Required ('${val}')`,
+              valType: 'string',
+              value: val,
+              expected: 200,
+              desc: `Accepts required static value '${val}' for '${targetField}'`,
+              selected: true
+            });
+            probes.push({
+              field: targetField,
+              location: targetLoc,
+              category: `Static Value: Disallowed Difference`,
+              valType: 'string',
+              value: `${val}_mismatch`,
+              expected: 422,
+              desc: `Rejects value differing from required static value '${val}'`,
+              selected: true
+            });
+            return probes;
+          }
         }
       }
 
