@@ -4472,55 +4472,135 @@
       closeAiRandomizerRulesModal();
     }
 
+    function setDeepValue(obj, path, val) {
+      if (!obj || typeof obj !== 'object' || !path) return;
+
+      const dotIndex = path.indexOf('.');
+      const head = dotIndex === -1 ? path : path.slice(0, dotIndex);
+      const rest = dotIndex === -1 ? '' : path.slice(dotIndex + 1);
+
+      const bracketMatch = head.match(/^([^\[]+)\[(.*?)\]$/);
+      if (bracketMatch) {
+        const arrayKey = bracketMatch[1];
+        const indexStr = bracketMatch[2].trim();
+
+        if (!Array.isArray(obj[arrayKey])) {
+          obj[arrayKey] = [];
+        }
+        const arr = obj[arrayKey];
+
+        if (indexStr === '') {
+          // Wildcard array (e.g. items[].quantity): applies to all elements
+          if (arr.length === 0) {
+            arr.push({});
+          }
+          for (let i = 0; i < arr.length; i++) {
+            if (!rest) {
+              arr[i] = val;
+            } else {
+              if (!arr[i] || typeof arr[i] !== 'object') arr[i] = {};
+              setDeepValue(arr[i], rest, val);
+            }
+          }
+          return;
+        } else {
+          // Specific index (e.g. items[0].quantity)
+          const idx = parseInt(indexStr, 10);
+          if (!isNaN(idx) && idx >= 0) {
+            while (arr.length <= idx) {
+              arr.push({});
+            }
+            if (!rest) {
+              arr[idx] = val;
+            } else {
+              if (!arr[idx] || typeof arr[idx] !== 'object') arr[idx] = {};
+              setDeepValue(arr[idx], rest, val);
+            }
+            return;
+          }
+        }
+      }
+
+      if (!rest) {
+        obj[head] = val;
+      } else {
+        if (!obj[head] || typeof obj[head] !== 'object') {
+          obj[head] = {};
+        }
+        setDeepValue(obj[head], rest, val);
+      }
+    }
+
     function extractAndApplyNaturalLanguageInstructions(payload, prompt, schema) {
       if (!payload || typeof payload !== 'object' || !prompt || typeof prompt !== 'string') return payload;
       const pText = prompt.trim();
       if (!pText) return payload;
-      const props = (schema && schema.properties) ? schema.properties : {};
 
-      function findMatchingKey(targetName) {
+      function getAllSchemaPaths(s, prefix = '') {
+        const paths = [];
+        if (!s) return paths;
+        if (s.type === 'object' || s.properties) {
+          const props = s.properties || {};
+          for (const [k, v] of Object.entries(props)) {
+            const fullPath = prefix ? `${prefix}.${k}` : k;
+            const type = v.type || (v.properties ? 'object' : (v.items ? 'array' : 'string'));
+            paths.push({ path: fullPath, type, name: k });
+            if (type === 'array' && v.items) {
+              paths.push(...getAllSchemaPaths(v.items, `${fullPath}[]`));
+            } else if (type === 'object' && v.properties) {
+              paths.push(...getAllSchemaPaths(v, fullPath));
+            }
+          }
+        }
+        return paths;
+      }
+
+      const allSchemaPaths = getAllSchemaPaths(schema);
+
+      function findMatchingTarget(targetName) {
         if (!targetName) return null;
-        const clean = targetName.toLowerCase().trim().replace(/[\s\-_]+/g, '');
+        const clean = targetName.toLowerCase().trim().replace(/[\s\-_\[\]\.]+/g, '');
         if (!clean) return null;
-        // 1. Direct exact match in payload keys
+
+        // 1. Exact match in allSchemaPaths
+        for (const item of allSchemaPaths) {
+          if (item.path.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '') === clean) return item;
+          if (item.name.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '') === clean) return item;
+        }
+        // 2. Direct exact match in payload keys
         for (const k of Object.keys(payload)) {
-          if (k.toLowerCase().replace(/[\s\-_]+/g, '') === clean) return k;
+          if (k.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '') === clean) return { path: k, type: typeof payload[k], name: k };
         }
-        // 2. Direct exact match in schema props
-        for (const k of Object.keys(props)) {
-          if (k.toLowerCase().replace(/[\s\-_]+/g, '') === clean) return k;
+        // 3. Substring match in allSchemaPaths
+        for (const item of allSchemaPaths) {
+          const pNorm = item.path.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '');
+          if (pNorm.includes(clean) || clean.includes(pNorm)) return item;
         }
-        // 3. Substring match
         for (const k of Object.keys(payload)) {
-          const kNorm = k.toLowerCase().replace(/[\s\-_]+/g, '');
-          if (kNorm.includes(clean) || clean.includes(kNorm)) return k;
-        }
-        for (const k of Object.keys(props)) {
-          const kNorm = k.toLowerCase().replace(/[\s\-_]+/g, '');
-          if (kNorm.includes(clean) || clean.includes(kNorm)) return k;
+          const kNorm = k.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '');
+          if (kNorm.includes(clean) || clean.includes(kNorm)) return { path: k, type: typeof payload[k], name: k };
         }
         return null;
       }
 
       function assignValue(keyName, rawVal) {
-        const matchedKey = findMatchingKey(keyName);
-        if (!matchedKey) return false;
-        const propMeta = props[matchedKey] || {};
-        const targetType = propMeta.type || typeof payload[matchedKey];
+        const matched = findMatchingTarget(keyName);
+        if (!matched) return false;
+        const targetType = matched.type;
         let cleanedVal = String(rawVal).trim().replace(/^["']|["']$/g, '');
         if (['a', 'an', 'the'].includes(cleanedVal.toLowerCase())) return false;
 
         if (targetType === 'number' || targetType === 'integer') {
           const num = parseFloat(cleanedVal);
           if (!isNaN(num)) {
-            payload[matchedKey] = (targetType === 'integer') ? Math.round(num) : num;
+            setDeepValue(payload, matched.path, (targetType === 'integer') ? Math.round(num) : num);
             return true;
           }
         } else if (targetType === 'boolean') {
-          payload[matchedKey] = (cleanedVal.toLowerCase() === 'true' || cleanedVal === '1');
+          setDeepValue(payload, matched.path, (cleanedVal.toLowerCase() === 'true' || cleanedVal === '1'));
           return true;
         } else {
-          payload[matchedKey] = cleanedVal;
+          setDeepValue(payload, matched.path, cleanedVal);
           return true;
         }
         return false;
@@ -4543,13 +4623,14 @@
         if (arrCountMatch1 || arrCountMatch2) {
           const count = parseInt(arrCountMatch1 ? arrCountMatch1[1] : arrCountMatch2[2], 10);
           const targetArr = arrCountMatch1 ? arrCountMatch1[2] : arrCountMatch2[1];
-          const matchedArrKey = findMatchingKey(targetArr);
-          if (matchedArrKey && Array.isArray(payload[matchedArrKey]) && count >= 0 && count <= 50) {
-            const arr = payload[matchedArrKey];
+          const matched = findMatchingTarget(targetArr);
+          const arrKey = matched ? matched.name : targetArr;
+          if (arrKey && Array.isArray(payload[arrKey]) && count >= 0 && count <= 50) {
+            const arr = payload[arrKey];
             if (arr.length < count && arr.length > 0) {
               while (arr.length < count) arr.push(JSON.parse(JSON.stringify(arr[0])));
             } else if (arr.length > count) {
-              payload[matchedArrKey] = arr.slice(0, count);
+              payload[arrKey] = arr.slice(0, count);
             }
             continue;
           }
@@ -4563,9 +4644,9 @@
             .replace(/^(?:set|use|put)\s+/i, '')
             .replace(/(?:should\s*be\s*exactly|must\s*be\s*exactly|should\s*be|must\s*be|to\s*be|equals?|is|=|:|->|as|for)\s*$/i, '')
             .trim();
-          const matchedKey = findMatchingKey(withoutEmail) || findMatchingKey('customer_email') || findMatchingKey('email') || Object.keys(payload).find(k => k.toLowerCase().includes('email'));
-          if (matchedKey) {
-            payload[matchedKey] = targetEmail;
+          const matched = findMatchingTarget(withoutEmail) || findMatchingTarget('customer_email') || findMatchingTarget('email');
+          if (matched) {
+            setDeepValue(payload, matched.path, targetEmail);
             emailHandled = true;
           }
           continue;
@@ -4575,11 +4656,11 @@
         const domainMatch = clause.match(/(?:domain|ending\s+in|ending\s+with)\s+[@]?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
         if (domainMatch) {
           const targetDomain = domainMatch[1];
-          const emailField = findMatchingKey('customer_email') || findMatchingKey('email') || Object.keys(payload).find(k => k.toLowerCase().includes('email'));
-          if (emailField) {
-            const currentVal = String(payload[emailField] || 'user@example.com');
+          const matched = findMatchingTarget('customer_email') || findMatchingTarget('email');
+          if (matched) {
+            const currentVal = String(payload[matched.path] || 'user@example.com');
             const userPart = currentVal.split('@')[0] || 'user';
-            payload[emailField] = `${userPart}@${targetDomain}`;
+            setDeepValue(payload, matched.path, `${userPart}@${targetDomain}`);
             emailHandled = true;
           }
           continue;
@@ -4607,9 +4688,9 @@
       if (!emailHandled) {
         const fallbackEmail = pText.match(emailRegex);
         if (fallbackEmail) {
-          const emailField = findMatchingKey('customer_email') || findMatchingKey('email') || Object.keys(payload).find(k => k.toLowerCase().includes('email'));
-          if (emailField) {
-            payload[emailField] = fallbackEmail[1];
+          const matched = findMatchingTarget('customer_email') || findMatchingTarget('email');
+          if (matched) {
+            setDeepValue(payload, matched.path, fallbackEmail[1]);
           }
         }
       }
@@ -4620,20 +4701,6 @@
     function applyRandomizerRulesToPayload(payload, rules, optSchema) {
       if (!payload || typeof payload !== 'object' || !rules || rules.enabled === false) {
         return payload;
-      }
-
-      function setDeepValue(obj, path, val) {
-        if (!obj || typeof obj !== 'object') return;
-        const parts = path.split('.');
-        let curr = obj;
-        for (let i = 0; i < parts.length - 1; i++) {
-          const p = parts[i];
-          if (!curr[p] || typeof curr[p] !== 'object') {
-            curr[p] = {};
-          }
-          curr = curr[p];
-        }
-        curr[parts[parts.length - 1]] = val;
       }
 
       // 0. Natural language instructions from custom prompt
@@ -4653,14 +4720,15 @@
         rules.arrayRules.forEach(ar => {
           if (!ar || !ar.active || !ar.field) return;
           const targetCount = Math.max(0, parseInt(ar.count, 10) || 1);
-          if (Array.isArray(payload[ar.field])) {
-            const arr = payload[ar.field];
+          const cleanField = ar.field.replace(/\[\]$/, '');
+          if (Array.isArray(payload[cleanField])) {
+            const arr = payload[cleanField];
             if (arr.length < targetCount && arr.length > 0) {
               while (arr.length < targetCount) {
                 arr.push(JSON.parse(JSON.stringify(arr[0])));
               }
             } else if (arr.length > targetCount) {
-              payload[ar.field] = arr.slice(0, targetCount);
+              payload[cleanField] = arr.slice(0, targetCount);
             }
           }
         });
@@ -4671,9 +4739,10 @@
         rules.staticOverrides.forEach(ov => {
           if (!ov || !ov.active || !ov.field) return;
           let val = ov.value;
-          if (ov.type === 'number') {
+          if (ov.type === 'number' || ov.type === 'integer') {
             val = Number(ov.value);
             if (isNaN(val)) val = ov.value;
+            else if (ov.type === 'integer') val = Math.round(val);
           } else if (ov.type === 'boolean') {
             val = (String(ov.value).toLowerCase() === 'true');
           } else if (ov.type === 'json') {
