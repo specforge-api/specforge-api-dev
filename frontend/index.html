@@ -2205,9 +2205,15 @@
           </div>
           <div style="display: flex; gap: 0.4rem;">
             <input type="text" id="prompt-test-instruction-input" class="kv-input" style="flex: 1; font-size: 0.82rem;" placeholder="e.g. 'the field value should be within 20 to 50' or 'enums: [ACTIVE, PENDING]' or 'price cannot be negative'..." onkeydown="if(event.key==='Enter'){event.preventDefault();handleGeneratePromptTests();}">
-            <button type="button" id="btn-generate-prompt-tests" class="btn btn-primary ai-btn-glow" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap;" onclick="handleGeneratePromptTests()">
+            <button type="button" id="btn-generate-prompt-tests" class="btn btn-outline" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap;" onclick="handleGeneratePromptTests()" title="Fast deterministic rule-based boundary compiler (0ms)">
               ⚡ Generate Probes
             </button>
+            <button type="button" id="btn-generate-prompt-tests-ai" class="btn btn-primary ai-btn-glow" style="font-size: 0.76rem; padding: 0.35rem 0.85rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem;" onclick="handleGeneratePromptTestsWithAI()" title="Perform in-browser neural WebGPU inference with active AI model (Gemma 3 1B / SmolLM2)">
+              🧠 AI Neural Generate
+            </button>
+          </div>
+          <div id="prompt-ai-inference-status" style="display: none; font-size: 0.74rem; color: #a855f7; margin-top: 0.4rem; font-weight: 600;">
+            <!-- Dynamic model loading & inference status -->
           </div>
 
           <!-- Quick Template Chips -->
@@ -5949,6 +5955,154 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       }
 
       renderPromptGeneratedProbesTable(probes);
+    }
+
+    async function handleGeneratePromptTestsWithAI() {
+      const op = operations[selectedOpIndex];
+      if (!op) return;
+
+      const selField = document.getElementById("prompt-target-field-select");
+      let fieldName = (selField && selField.value) ? selField.value : "payload";
+      const selLoc = document.getElementById("prompt-target-location-select");
+      let location = (selLoc && selLoc.value) ? selLoc.value : "body";
+
+      const input = document.getElementById("prompt-test-instruction-input");
+      const prompt = (input ? input.value : "").trim();
+      if (!prompt) {
+        alert("Please enter a test generation prompt or instruction.");
+        if (input) input.focus();
+        return;
+      }
+
+      const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      const resolved = resolveRef(rawSchema);
+
+      const { allFields } = getRouteSchemaFieldList(op);
+      let targetType = "string";
+
+      // Auto-resolve target field if prompt specifically mentions any field from schema
+      if (allFields && allFields.length > 0) {
+        const sortedFields = [...allFields].sort((a, b) => {
+          const aScore = (a.type !== 'array' ? 100 : 0) + a.path.length;
+          const bScore = (b.type !== 'array' ? 100 : 0) + b.path.length;
+          return bScore - aScore;
+        });
+
+        const pLower = prompt.toLowerCase();
+        for (const f of sortedFields) {
+          const fNorm = f.name.toLowerCase().replace(/[\s\-_]+/g, '');
+          const pathNorm = f.path.toLowerCase().replace(/[\s\-_\[\]\.]+/g, '');
+          const cleanPrompt = pLower.replace(/[\s\-_\[\]\.]+/g, '');
+          if (cleanPrompt.includes(pathNorm) || pLower.includes(f.name.toLowerCase()) || cleanPrompt.includes(fNorm)) {
+            fieldName = f.path;
+            location = 'body';
+            targetType = f.type;
+            if (selField) {
+              const matchingOpt = [...selField.options].find(o => o.value === f.path);
+              if (matchingOpt) {
+                selField.value = f.path;
+                onPromptTargetFieldSelectChange();
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      const btnAi = document.getElementById("btn-generate-prompt-tests-ai");
+      const statusEl = document.getElementById("prompt-ai-inference-status");
+
+      if (btnAi) {
+        btnAi.disabled = true;
+        btnAi.innerHTML = `<span class="ai-spinner-anim">🧠</span> Inferencing...`;
+      }
+
+      const activeKey = getSelectedAiModelKey();
+      const activeConfig = AI_MODELS[activeKey] || AI_MODELS.smollm2;
+
+      if (statusEl) {
+        statusEl.style.display = "block";
+        statusEl.innerHTML = `<span class="ai-spinner-anim">✨</span> Initializing in-browser ${escapeHtml(activeConfig.name)} (WebGPU / WASM)...`;
+      }
+
+      let generatedProbes = [];
+
+      try {
+        const pipe = await getOrCreateAiPipeline(progress => {
+          if (statusEl && progress.status === 'progress') {
+            const pct = Math.round((progress.loaded / progress.total) * 100);
+            statusEl.innerHTML = `<span class="ai-spinner-anim">📥</span> Downloading ${escapeHtml(activeConfig.name)} weights: ${pct}%...`;
+          }
+        });
+
+        if (statusEl) {
+          statusEl.innerHTML = `<span class="ai-spinner-anim">🧠</span> WebGPU Neural Inference: Synthesizing test probes with ${escapeHtml(activeConfig.name)}...`;
+        }
+
+        const systemPrompt = "You are an API contract test synthesizer. Given an API endpoint and a natural language test rule, generate 2 to 4 test cases. Output ONLY a valid JSON array of objects. Do not output markdown, code fences, or explanations. Each object must have keys: 'category' (string), 'valType' ('string' or 'number'), 'value' (string or number), 'expected' (status number like 200 or 422), 'desc' (string).";
+        const userPrompt = `Endpoint: ${op.method.toUpperCase()} ${op.path}\nTarget Field: ${fieldName} (${targetType})\nLocation: ${location}\nPrompt Rule: "${prompt}"\n\nGenerate JSON array of 2 to 4 test probes:`;
+
+        const messages = [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ];
+
+        const output = await pipe(messages, {
+          max_new_tokens: 320,
+          temperature: 0.3,
+          top_p: 0.9
+        });
+
+        const rawText = output[0]?.generated_text?.at(-1)?.content || output[0]?.generated_text || "";
+        const clean = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+
+        let parsedArray = null;
+        const arrayMatch = clean.match(/\[[\s\S]*\]/);
+        if (arrayMatch) {
+          try {
+            parsedArray = JSON.parse(arrayMatch[0]);
+          } catch(e) {}
+        }
+
+        if (Array.isArray(parsedArray) && parsedArray.length > 0) {
+          generatedProbes = parsedArray.map(p => ({
+            field: fieldName,
+            location: location,
+            category: p.category || "AI Neural Boundary",
+            valType: p.valType || (typeof p.value === 'number' ? 'number' : 'string'),
+            value: String(p.value ?? ""),
+            expected: Number(p.expected) || 422,
+            desc: p.desc || `AI-inferred probe for '${fieldName}'`,
+            selected: true
+          }));
+        }
+      } catch (err) {
+        console.warn("[SpecForge AI] Neural probe inference error, using compiler fallback:", err);
+      }
+
+      // If neural inference produced no valid probes, fall back to rule compiler
+      if (!generatedProbes || generatedProbes.length === 0) {
+        generatedProbes = synthesizePromptTestCases(prompt, fieldName, location, op, resolved);
+        if (statusEl) {
+          statusEl.innerHTML = `⚡ Generated ${generatedProbes.length} probes (rule-compiler mode).`;
+        }
+      } else {
+        if (statusEl) {
+          statusEl.innerHTML = `✅ Successfully synthesized ${generatedProbes.length} probes via ${escapeHtml(activeConfig.name)} neural inference!`;
+        }
+      }
+
+      window.__generatedPromptProbes = generatedProbes;
+      renderPromptGeneratedProbesTable(generatedProbes);
+
+      if (btnAi) {
+        btnAi.disabled = false;
+        btnAi.innerHTML = `🧠 AI Neural Generate`;
+      }
+
+      setTimeout(() => {
+        if (statusEl) statusEl.style.display = "none";
+      }, 5000);
     }
 
     function synthesizePromptTestCases(prompt, fieldName, location, op, schema) {
