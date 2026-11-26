@@ -814,6 +814,93 @@
     .sub-panel.active { display: block; }
     #subpanel-body.active { display: flex; flex-direction: column; flex: 1; }
 
+    /* Body Type Selector & Multipart / URL-Encoded Tables */
+    .body-type-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding-bottom: 0.6rem;
+      margin-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .body-type-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: var(--secondary);
+      border: 1px solid var(--border);
+      padding: 0.2rem;
+      border-radius: calc(var(--radius) - 2px);
+      flex-wrap: wrap;
+    }
+    .body-type-btn {
+      background: transparent;
+      border: none;
+      border-radius: calc(var(--radius) - 4px);
+      color: var(--muted-foreground);
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 0.24rem 0.58rem;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      font-family: var(--font-sans);
+    }
+    .body-type-btn:hover {
+      color: var(--foreground);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .body-type-btn.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+    .body-empty-box {
+      flex: 1;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem 1.25rem;
+      border: 1px dashed var(--border);
+      border-radius: calc(var(--radius) - 2px);
+      background: rgba(128, 128, 128, 0.03);
+      color: var(--muted-foreground);
+      font-size: 0.82rem;
+      gap: 0.4rem;
+    }
+    .file-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .file-picker-input {
+      font-size: 0.75rem;
+      color: var(--foreground);
+      max-width: 210px;
+    }
+    .file-meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      padding: 0.12rem 0.45rem;
+      border-radius: 4px;
+      background: var(--secondary);
+      border: 1px solid var(--border);
+      color: var(--foreground);
+    }
+    .file-meta-pill.oversized {
+      border-color: var(--destructive);
+      color: var(--destructive);
+      background: var(--destructive-background);
+    }
+
     /* Key-Value Tables (Params & Headers) */
     .kv-table {
       width: 100%;
@@ -1414,7 +1501,7 @@
                 Auth <span id="auth-status-badge" class="sub-tab-badge">None</span>
               </button>
               <button class="sub-tab-btn" id="subtab-body-btn" onclick="switchSubTab('body')">
-                Body
+                Body <span id="body-type-badge" class="sub-tab-badge">None</span>
               </button>
             </div>
 
@@ -1511,7 +1598,36 @@
 
             <!-- Subpanel 4: Body -->
             <div id="subpanel-body" class="sub-panel">
-              <div class="card-title" style="margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+              <!-- Body Type Selector Bar -->
+              <div class="body-type-bar">
+                <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                  <div class="body-type-group" role="tablist" aria-label="Request Body Type">
+                    <button type="button" class="body-type-btn" id="body-type-btn-none" onclick="setBodyType('none')">none</button>
+                    <button type="button" class="body-type-btn active" id="body-type-btn-json" onclick="setBodyType('json')">JSON</button>
+                    <button type="button" class="body-type-btn" id="body-type-btn-formdata" onclick="setBodyType('formdata')">form-data</button>
+                    <button type="button" class="body-type-btn" id="body-type-btn-urlencoded" onclick="setBodyType('urlencoded')">x-www-form-urlencoded</button>
+                    <button type="button" class="body-type-btn" id="body-type-btn-raw" onclick="setBodyType('raw')">raw</button>
+                  </div>
+                  <select id="body-raw-format-select" class="kv-input" style="display: none; width: auto; font-size: 0.75rem; padding: 0.24rem 0.5rem;" onchange="onRawFormatChange()">
+                    <option value="text/plain">Text (text/plain)</option>
+                    <option value="application/json">JSON (application/json)</option>
+                    <option value="application/xml">XML (application/xml)</option>
+                    <option value="text/html">HTML (text/html)</option>
+                    <option value="application/javascript">JavaScript (application/javascript)</option>
+                  </select>
+                </div>
+                <span id="body-content-type-pill" class="pill pill-planned" style="font-family: var(--font-mono); font-size: 0.68rem;" title="Content-Type managed automatically by this Body Type selector">
+                  Content-Type: application/json
+                </span>
+              </div>
+
+              <!-- Warning banner when a non-empty body mode is chosen on GET/HEAD -->
+              <div id="body-get-warning" style="display: none; margin-bottom: 0.55rem; padding: 0.4rem 0.7rem; border-radius: calc(var(--radius) - 3px); border: 1px solid var(--warning); background: var(--warning-background); color: var(--warning); font-size: 0.75rem; font-weight: 500;">
+                ⚠️ HTTP GET/HEAD requests do not transmit a request body in browsers; body and Content-Type will be omitted when sending.
+              </div>
+
+              <!-- Contextual Toolbar: JSON -->
+              <div id="body-json-toolbar" class="card-title" style="margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                   <span style="font-size: 0.82rem; font-weight: 600;">Request Body (JSON with Comments)</span>
                   <span style="font-size: 0.68rem; color: var(--muted-foreground); background: var(--secondary); border: 1px solid var(--border); padding: 0.08rem 0.4rem; border-radius: 3px;" title="Supports // line comments and /* multi-line */ comments! Comments and trailing commas are safely stripped before sending.">
@@ -1538,23 +1654,93 @@
                 </div>
               </div>
 
-              <!-- AI Status / Progress Bar -->
-              <div id="ai-status-banner" style="display: none; margin-bottom: 0.5rem; padding: 0.45rem 0.75rem; border-radius: calc(var(--radius) - 2px); font-size: 0.75rem; border: 1px solid rgba(147, 51, 234, 0.3); background: rgba(147, 51, 234, 0.05);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
-                  <span id="ai-status-text" style="font-weight: 500; color: #a855f7; display: flex; align-items: center; gap: 0.4rem;">
-                    <span id="ai-status-spinner" class="ai-spinner-anim">⚙️</span>
-                    <span id="ai-status-msg">Initializing WebGPU AI Model...</span>
-                  </span>
-                  <span id="ai-status-detail" style="font-size: 0.7rem; color: var(--muted-foreground); font-family: var(--font-mono);">0%</span>
+              <!-- Contextual Toolbar: Raw -->
+              <div id="body-raw-toolbar" class="card-title" style="display: none; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.82rem; font-weight: 600;">Raw Request Body</span>
+                  <span id="body-raw-subtype-badge" style="font-size: 0.68rem; color: var(--muted-foreground); background: var(--secondary); border: 1px solid var(--border); padding: 0.08rem 0.4rem; border-radius: 3px; font-family: var(--font-mono);">text/plain</span>
                 </div>
-                <div style="height: 4px; background: rgba(0, 0, 0, 0.1); border-radius: 2px; overflow: hidden;">
-                  <div id="ai-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #3b82f6); transition: width 0.15s ease;"></div>
+                <button type="button" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="clearRawRequestBody()">Clear Raw Body</button>
+              </div>
+
+              <!-- Body Mode: None -->
+              <div id="body-none-panel" class="body-empty-box" style="display: none;">
+                <span style="font-size: 1.25rem;">📭</span>
+                <strong>No Request Body</strong>
+                <span>This request does not send a payload or <code>Content-Type</code> header. Choose JSON, form-data, x-www-form-urlencoded, or raw above if needed.</span>
+              </div>
+
+              <!-- Body Mode: JSON & Raw Code Editor -->
+              <div id="body-text-editor-panel" style="display: flex; flex-direction: column; flex: 1;">
+                <!-- AI Status / Progress Bar -->
+                <div id="ai-status-banner" style="display: none; margin-bottom: 0.5rem; padding: 0.45rem 0.75rem; border-radius: calc(var(--radius) - 2px); font-size: 0.75rem; border: 1px solid rgba(147, 51, 234, 0.3); background: rgba(147, 51, 234, 0.05);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                    <span id="ai-status-text" style="font-weight: 500; color: #a855f7; display: flex; align-items: center; gap: 0.4rem;">
+                      <span id="ai-status-spinner" class="ai-spinner-anim">⚙️</span>
+                      <span id="ai-status-msg">Initializing WebGPU AI Model...</span>
+                    </span>
+                    <span id="ai-status-detail" style="font-size: 0.7rem; color: var(--muted-foreground); font-family: var(--font-mono);">0%</span>
+                  </div>
+                  <div style="height: 4px; background: rgba(0, 0, 0, 0.1); border-radius: 2px; overflow: hidden;">
+                    <div id="ai-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #3b82f6); transition: width 0.15s ease;"></div>
+                  </div>
+                </div>
+
+                <div class="code-editor-wrapper">
+                  <div id="body-line-numbers" class="line-numbers"><div>1</div></div>
+                  <textarea id="request-body-input" class="editor-box" spellcheck="false" placeholder="{\n  // You can comment out lines with //:\n  &quot;username&quot;: &quot;alice&quot;\n}"></textarea>
                 </div>
               </div>
 
-              <div class="code-editor-wrapper">
-                <div id="body-line-numbers" class="line-numbers"><div>1</div></div>
-                <textarea id="request-body-input" class="editor-box" spellcheck="false" placeholder="{\n  // You can comment out lines with //:\n  &quot;username&quot;: &quot;alice&quot;\n}"></textarea>
+              <!-- Body Mode: Multipart Form Data -->
+              <div id="body-formdata-panel" style="display: none; flex-direction: column; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.4rem;">
+                  <div style="font-size: 0.76rem; color: var(--muted-foreground);">
+                    <strong style="color: var(--foreground);">Multipart Form Data</strong> &mdash; New fields default to <code>File</code> (max 10 MiB via proxy).
+                  </div>
+                  <button type="button" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addFormDataRow()">
+                    + Add Field
+                  </button>
+                </div>
+                <div style="overflow-x: auto;">
+                  <table class="kv-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 28px; text-align: center;"></th>
+                        <th style="width: 170px;">Key</th>
+                        <th style="width: 96px;">Type</th>
+                        <th>Value / File</th>
+                        <th style="width: 28px; text-align: center;"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="formdata-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Body Mode: URL-Encoded Form Data -->
+              <div id="body-urlencoded-panel" style="display: none; flex-direction: column; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.4rem;">
+                  <div style="font-size: 0.76rem; color: var(--muted-foreground);">
+                    <strong style="color: var(--foreground);">URL-Encoded Form</strong> &mdash; Sent as <code>application/x-www-form-urlencoded</code>. Supports <code>{{envVar}}</code>.
+                  </div>
+                  <button type="button" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addUrlEncodedRow()">
+                    + Add Field
+                  </button>
+                </div>
+                <div style="overflow-x: auto;">
+                  <table class="kv-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 28px; text-align: center;"></th>
+                        <th style="width: 180px;">Key</th>
+                        <th>Value</th>
+                        <th style="width: 28px; text-align: center;"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="urlencoded-table-body"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -2496,11 +2682,37 @@
     let testCases = [];
     let snippetLang = 'curl';
 
-    // Interactive Parameters & Headers State
+    // Interactive Parameters, Headers & Body State
     let pathParams = [];
     let queryParams = [];
     let requestHeaders = [];
     let authConfig = { type: 'none', token: '', headerName: 'X-API-Key', headerVal: '' };
+
+    const BODY_TYPES = ['none', 'json', 'formdata', 'urlencoded', 'raw'];
+    const BODY_TYPE_LABELS = {
+      none: 'None',
+      json: 'JSON',
+      formdata: 'form-data',
+      urlencoded: 'x-www-form-urlencoded',
+      raw: 'raw'
+    };
+    const RAW_FORMATS = {
+      'text/plain': { label: 'Text (text/plain)', placeholder: 'Enter plain text payload...' },
+      'application/json': { label: 'JSON (application/json)', placeholder: '{\n  "key": "value"\n}' },
+      'application/xml': { label: 'XML (application/xml)', placeholder: '<request>\n  <item>value</item>\n</request>' },
+      'text/html': { label: 'HTML (text/html)', placeholder: '<div>Hello</div>' },
+      'application/javascript': { label: 'JavaScript (application/javascript)', placeholder: 'console.log("test");' }
+    };
+    const MAX_PROXY_BODY_BYTES = 10 * 1024 * 1024;
+    let bodyConfig = {
+      type: 'none',
+      rawFormat: 'text/plain',
+      jsonText: '',
+      rawText: '',
+      formDataRows: [],
+      urlencodedRows: []
+    };
+    const routeBodyStateCache = new Map();
 
     // =========================================================================
     // Environment Variables Engine ({{variable}} syntax)
@@ -2748,6 +2960,60 @@
       });
 
       return list;
+    }
+
+    function getOpJsonSchema(op) {
+      const content = op?.raw?.requestBody?.content;
+      if (!content || typeof content !== 'object') return null;
+      if (content['application/json']?.schema) return content['application/json'].schema;
+      const jsonKey = Object.keys(content).find(k => {
+        const lower = k.toLowerCase();
+        return lower.endsWith('+json') || lower === '*/*';
+      });
+      return jsonKey ? (content[jsonKey]?.schema || null) : null;
+    }
+
+    function hasJsonRequestBodySchema(op) {
+      const content = op?.raw?.requestBody?.content;
+      if (!content || typeof content !== 'object') return false;
+      if (content['application/json'] !== undefined) return true;
+      return Object.keys(content).some(k => {
+        const lower = k.toLowerCase();
+        return lower.endsWith('+json') || lower === '*/*';
+      });
+    }
+
+    function getDerivedBodyContentType(op = operations[selectedOpIndex]) {
+      if (!op || ['get', 'head'].includes(op.method)) return null;
+      switch (bodyConfig.type) {
+        case 'json': return 'application/json';
+        case 'raw': return bodyConfig.rawFormat || 'text/plain';
+        case 'urlencoded': return 'application/x-www-form-urlencoded';
+        case 'formdata': return 'multipart/form-data';
+        default: return null;
+      }
+    }
+
+    function getEffectiveManualRequestHeaders(op = operations[selectedOpIndex], { forFetch = false } = {}) {
+      const headersObj = getEffectiveHeadersForOp(op, requestHeaders);
+      const existingCtKey = Object.keys(headersObj).find(k => k.toLowerCase() === 'content-type');
+      const derivedCt = getDerivedBodyContentType(op);
+
+      if (bodyConfig.type === 'formdata' && !['get', 'head'].includes(op?.method)) {
+        // Browser FormData / cURL -F / httpx files= must generate their own multipart boundary
+        if (forFetch) {
+          if (existingCtKey && (!headersObj[existingCtKey].toLowerCase().includes('boundary='))) {
+            delete headersObj[existingCtKey];
+          }
+          return headersObj;
+        }
+        return headersObj;
+      }
+
+      if (derivedCt && !existingCtKey) {
+        headersObj['Content-Type'] = derivedCt;
+      }
+      return headersObj;
     }
 
     function getEffectiveHeadersForOp(op, localHeaders = requestHeaders) {
@@ -3327,6 +3593,40 @@
       });
     }
 
+    let activeBodyRouteKey = null;
+
+    function createDefaultBodyConfigForOp(op) {
+      const hasJson = hasJsonRequestBodySchema(op);
+      const defaultType = hasJson ? 'json' : 'none';
+      const jsonText = hasJson ? JSON.stringify(generateMockFromOp(op), null, 2) : '';
+      const fdSeed = extractSchemaFormRows(op, 'multipart/form-data', 'file');
+      const ueSeed = extractSchemaFormRows(op, 'application/x-www-form-urlencoded', 'text');
+
+      return {
+        type: defaultType,
+        rawFormat: 'text/plain',
+        jsonText,
+        rawText: '',
+        formDataRows: fdSeed.length > 0 ? fdSeed : [{ enabled: true, key: '', rowType: 'file', value: '', file: null }],
+        urlencodedRows: ueSeed.length > 0 ? ueSeed : [{ enabled: true, key: '', value: '' }]
+      };
+    }
+
+    function initBodyStateForOp(op) {
+      if (activeBodyRouteKey) {
+        syncActiveTextEditorToBodyConfig();
+        routeBodyStateCache.set(activeBodyRouteKey, bodyConfig);
+      }
+      const nextKey = getRouteKey(op);
+      activeBodyRouteKey = nextKey;
+      if (routeBodyStateCache.has(nextKey)) {
+        bodyConfig = routeBodyStateCache.get(nextKey);
+      } else {
+        bodyConfig = createDefaultBodyConfigForOp(op);
+        routeBodyStateCache.set(nextKey, bodyConfig);
+      }
+    }
+
     function selectOperation(index) {
       if (document.getElementById("view-settings") && document.getElementById("view-settings").classList.contains("active")) {
         switchTab('client');
@@ -3336,6 +3636,8 @@
       renderEndpointList();
       const op = operations[index];
       if (!op) return;
+
+      initBodyStateForOp(op);
 
       document.getElementById("active-method-badge").className = `badge-method badge-${op.method}`;
       document.getElementById("active-method-badge").textContent = op.method.toUpperCase();
@@ -3377,11 +3679,8 @@
         });
       });
 
-      // 3. Initialize Headers
+      // 3. Initialize Headers (Content-Type is automatically managed via the Body tab)
       requestHeaders = [];
-      if (['post', 'put', 'patch'].includes(op.method)) {
-        requestHeaders.push({ enabled: true, key: 'Content-Type', value: 'application/json', isAuth: false });
-      }
 
       // Add declared header params
       rawParams.filter(p => p.in === 'header').forEach(p => {
@@ -3401,13 +3700,13 @@
       // Render all controls
       renderPathParamsTable();
       renderQueryParamsTable();
+      renderBodyTypeUI();
       renderHeadersTable();
       updateAuthUI();
       updateEndpointGlobalHeaderBadge();
 
-      // Reset Body & active sub-tab
-      resetRequestBody();
-      if (op.method === 'get') {
+      // Focus Params on GET/HEAD routes, Body on POST/PUT/PATCH/DELETE routes
+      if (['get', 'head'].includes(op.method)) {
         switchSubTab('params');
       } else {
         switchSubTab('body');
@@ -3637,6 +3936,49 @@
           </td>
         `;
         tbody.appendChild(routeSectionTr);
+      }
+
+      // 1.5. Render Auto Content-Type derived from Body tab selector
+      const derivedCt = getDerivedBodyContentType(op);
+      const hasManualGlobalCt = ghMasterEnabled && globalList.some(
+        gh => isIndividualGlobalHeaderEnabledForOp(op, gh.key) && gh.key.trim().toLowerCase() === 'content-type'
+      );
+      const hasManualLocalCt = requestHeaders.some(
+        h => h.enabled && h.key && h.key.trim().toLowerCase() === 'content-type'
+      );
+      const isCtOverridden = hasManualGlobalCt || hasManualLocalCt;
+
+      if (derivedCt) {
+        if (!isCtOverridden) {
+          activeCount++;
+        }
+        const autoTr = document.createElement("tr");
+        autoTr.id = "auto-body-content-type-row";
+        autoTr.style.opacity = isCtOverridden ? "0.55" : "1";
+        autoTr.style.background = "rgba(16, 185, 129, 0.04)";
+        const ctDisplayVal = (bodyConfig.type === 'formdata')
+          ? 'multipart/form-data (boundary set automatically on send)'
+          : derivedCt;
+
+        autoTr.innerHTML = `
+          <td style="text-align: center; vertical-align: middle;">
+            <span title="Automatically managed by the Body Type selector" style="font-size: 0.78rem; color: #10B981;">⚙️</span>
+          </td>
+          <td style="vertical-align: middle;">
+            <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+              <span style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; color: var(--foreground);">Content-Type</span>
+              <span class="pill" style="font-size: 0.62rem; padding: 0.05rem 0.35rem; background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25);">📦 Auto from Body</span>
+              ${isCtOverridden ? '<span class="pill" style="font-size: 0.62rem; padding: 0.05rem 0.35rem; background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25);" title="Overridden by an explicit Content-Type header">⚡ Overridden</span>' : ''}
+            </div>
+          </td>
+          <td style="vertical-align: middle;">
+            <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--primary);">${escapeHtml(ctDisplayVal)}</span>
+          </td>
+          <td style="text-align: center; vertical-align: middle;">
+            <button type="button" class="btn btn-outline" onclick="switchSubTab('body')" title="Change Body Type" style="font-size: 0.66rem; padding: 0.1rem 0.38rem;">Body ↗</button>
+          </td>
+        `;
+        tbody.appendChild(autoTr);
       }
 
       // 2. Render Route Headers
@@ -3913,6 +4255,7 @@
       textarea.selectionEnd = lineStart + replacement.length;
 
       updateBodyLineNumbers();
+      syncActiveTextEditorToBodyConfig();
       updateCodeSnippet();
     }
 
@@ -3930,6 +4273,358 @@
     }
     window.__updateBodyLineNumbers = updateBodyLineNumbers;
 
+    function syncActiveTextEditorToBodyConfig() {
+      const textarea = document.getElementById("request-body-input");
+      if (!textarea) return;
+      if (bodyConfig.type === 'json') {
+        bodyConfig.jsonText = textarea.value;
+      } else if (bodyConfig.type === 'raw') {
+        bodyConfig.rawText = textarea.value;
+      }
+    }
+
+    function setBodyType(nextType) {
+      if (!BODY_TYPES.includes(nextType)) nextType = 'none';
+      syncActiveTextEditorToBodyConfig();
+      bodyConfig.type = nextType;
+      if (activeBodyRouteKey) {
+        routeBodyStateCache.set(activeBodyRouteKey, bodyConfig);
+      }
+      renderBodyTypeUI();
+      renderHeadersTable();
+      updateCodeSnippet();
+    }
+
+    function onRawFormatChange() {
+      const sel = document.getElementById("body-raw-format-select");
+      if (!sel) return;
+      bodyConfig.rawFormat = sel.value || 'text/plain';
+      renderBodyTypeUI();
+      renderHeadersTable();
+      updateCodeSnippet();
+    }
+
+    function clearRawRequestBody() {
+      bodyConfig.rawText = '';
+      const textarea = document.getElementById("request-body-input");
+      if (textarea) {
+        textarea.value = '';
+        updateBodyLineNumbers();
+      }
+      updateCodeSnippet();
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function buildKvEmptyRow(colspan, msg) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="${colspan}" style="color: var(--text-muted); text-align: center; font-size: 0.8rem; padding: 0.75rem;">${msg}</td>`;
+      return tr;
+    }
+
+    function renderFormDataTable() {
+      const tbody = document.getElementById("formdata-table-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const rows = bodyConfig.formDataRows || [];
+      if (rows.length === 0) {
+        tbody.appendChild(buildKvEmptyRow(5, `No form-data fields. Click <strong>+ Add Field</strong> to add a file or text field.`));
+        return;
+      }
+
+      rows.forEach((row, idx) => {
+        const isFile = row.rowType !== 'text';
+        const tr = document.createElement("tr");
+
+        const cbTd = document.createElement("td");
+        cbTd.style.textAlign = "center";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = row.enabled !== false;
+        cb.onchange = () => toggleFormDataRow(idx);
+        cbTd.appendChild(cb);
+
+        const keyTd = document.createElement("td");
+        const keyInput = document.createElement("input");
+        keyInput.type = "text";
+        keyInput.className = "kv-input";
+        keyInput.value = row.key || '';
+        keyInput.placeholder = isFile ? "e.g. file" : "Key";
+        keyInput.oninput = (e) => onFormDataKeyInput(idx, e.target.value);
+        keyTd.appendChild(keyInput);
+
+        const typeTd = document.createElement("td");
+        const typeSelect = document.createElement("select");
+        typeSelect.className = "kv-input";
+        typeSelect.style.fontSize = "0.75rem";
+        typeSelect.innerHTML = `<option value="file">File</option><option value="text">Text</option>`;
+        typeSelect.value = isFile ? 'file' : 'text';
+        typeSelect.onchange = (e) => onFormDataRowTypeChange(idx, e.target.value);
+        typeTd.appendChild(typeSelect);
+
+        const valTd = document.createElement("td");
+        if (isFile) {
+          const wrap = document.createElement("div");
+          wrap.className = "file-picker-row";
+
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.className = "file-picker-input";
+          fileInput.onchange = () => onFormDataFileChange(idx, fileInput);
+          wrap.appendChild(fileInput);
+
+          const metaSpan = document.createElement("span");
+          metaSpan.id = `formdata-file-meta-${idx}`;
+          renderFormDataFileMetaInto(metaSpan, row, idx);
+          wrap.appendChild(metaSpan);
+
+          valTd.appendChild(wrap);
+        } else {
+          const valInput = document.createElement("input");
+          valInput.type = "text";
+          valInput.className = "kv-input";
+          valInput.value = row.value || '';
+          valInput.placeholder = "Value (supports {{envVar}})";
+          valInput.oninput = (e) => onFormDataTextValueInput(idx, e.target.value);
+          valTd.appendChild(valInput);
+        }
+
+        const delTd = document.createElement("td");
+        delTd.style.textAlign = "center";
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "btn-icon";
+        delBtn.title = "Remove";
+        delBtn.textContent = "✕";
+        delBtn.onclick = () => removeFormDataRow(idx);
+        delTd.appendChild(delBtn);
+
+        tr.append(cbTd, keyTd, typeTd, valTd, delTd);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderFormDataFileMetaInto(container, row, idx) {
+      if (!container) return;
+      container.innerHTML = "";
+      if (!row || !row.file) return;
+
+      const oversized = row.file.size > MAX_PROXY_BODY_BYTES;
+      const pill = document.createElement("span");
+      pill.className = `file-meta-pill${oversized ? ' oversized' : ''}`;
+      pill.title = oversized ? "Exceeds 10 MiB SpecForge proxy buffer limit" : row.file.name;
+      pill.textContent = `${row.file.name} (${formatFileSize(row.file.size)})${oversized ? ' • >10MB limit' : ''}`;
+
+      const clrBtn = document.createElement("button");
+      clrBtn.type = "button";
+      clrBtn.className = "btn-icon";
+      clrBtn.style.fontSize = "0.72rem";
+      clrBtn.style.padding = "0 0.25rem";
+      clrBtn.title = "Clear selected file";
+      clrBtn.textContent = "✕";
+      clrBtn.onclick = () => clearFormDataFile(idx);
+
+      container.append(pill, clrBtn);
+    }
+
+    function addFormDataRow(defaults = {}) {
+      bodyConfig.formDataRows.push({
+        enabled: defaults.enabled !== false,
+        key: defaults.key || '',
+        rowType: defaults.rowType || 'file',
+        value: defaults.value || '',
+        file: defaults.file || null
+      });
+      renderFormDataTable();
+      updateCodeSnippet();
+    }
+
+    function removeFormDataRow(idx) {
+      bodyConfig.formDataRows.splice(idx, 1);
+      renderFormDataTable();
+      updateCodeSnippet();
+    }
+
+    function toggleFormDataRow(idx) {
+      bodyConfig.formDataRows[idx].enabled = !bodyConfig.formDataRows[idx].enabled;
+      updateCodeSnippet();
+    }
+
+    function onFormDataKeyInput(idx, val) {
+      bodyConfig.formDataRows[idx].key = val;
+      updateCodeSnippet();
+    }
+
+    function onFormDataTextValueInput(idx, val) {
+      bodyConfig.formDataRows[idx].value = val;
+      updateCodeSnippet();
+    }
+
+    function onFormDataRowTypeChange(idx, newType) {
+      const row = bodyConfig.formDataRows[idx];
+      if (!row) return;
+      row.rowType = newType === 'text' ? 'text' : 'file';
+      if (row.rowType === 'text') row.file = null;
+      renderFormDataTable();
+      updateCodeSnippet();
+    }
+
+    function onFormDataFileChange(idx, inputEl) {
+      const row = bodyConfig.formDataRows[idx];
+      if (!row) return;
+      row.file = (inputEl && inputEl.files && inputEl.files[0]) ? inputEl.files[0] : null;
+      const metaSpan = document.getElementById(`formdata-file-meta-${idx}`);
+      renderFormDataFileMetaInto(metaSpan, row, idx);
+      updateCodeSnippet();
+    }
+
+    function clearFormDataFile(idx) {
+      const row = bodyConfig.formDataRows[idx];
+      if (!row) return;
+      row.file = null;
+      renderFormDataTable();
+      updateCodeSnippet();
+    }
+
+    function renderUrlEncodedTable() {
+      const tbody = document.getElementById("urlencoded-table-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const rows = bodyConfig.urlencodedRows || [];
+      if (rows.length === 0) {
+        tbody.appendChild(buildKvEmptyRow(4, `No URL-encoded fields. Click <strong>+ Add Field</strong> to add one.`));
+        return;
+      }
+
+      rows.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" ${row.enabled !== false ? 'checked' : ''} onchange="toggleUrlEncodedRow(${idx})">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(row.key || '')}" placeholder="Key" oninput="onUrlEncodedFieldChange(${idx}, 'key', this.value)">
+          </td>
+          <td>
+            <input type="text" class="kv-input" value="${escapeHtml(row.value || '')}" placeholder="Value (supports {{envVar}})" oninput="onUrlEncodedFieldChange(${idx}, 'value', this.value)">
+          </td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-icon" onclick="removeUrlEncodedRow(${idx})" title="Remove">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addUrlEncodedRow(defaults = {}) {
+      bodyConfig.urlencodedRows.push({
+        enabled: defaults.enabled !== false,
+        key: defaults.key || '',
+        value: defaults.value || ''
+      });
+      renderUrlEncodedTable();
+      updateCodeSnippet();
+    }
+
+    function removeUrlEncodedRow(idx) {
+      bodyConfig.urlencodedRows.splice(idx, 1);
+      renderUrlEncodedTable();
+      updateCodeSnippet();
+    }
+
+    function toggleUrlEncodedRow(idx) {
+      bodyConfig.urlencodedRows[idx].enabled = !bodyConfig.urlencodedRows[idx].enabled;
+      updateCodeSnippet();
+    }
+
+    function onUrlEncodedFieldChange(idx, field, val) {
+      bodyConfig.urlencodedRows[idx][field] = val;
+      updateCodeSnippet();
+    }
+
+    function renderBodyTypeUI() {
+      const op = operations[selectedOpIndex];
+      const activeType = BODY_TYPES.includes(bodyConfig.type) ? bodyConfig.type : 'none';
+
+      BODY_TYPES.forEach(t => {
+        const btn = document.getElementById(`body-type-btn-${t}`);
+        if (btn) btn.classList.toggle("active", t === activeType);
+      });
+
+      const tabBadge = document.getElementById("body-type-badge");
+      if (tabBadge) tabBadge.textContent = BODY_TYPE_LABELS[activeType] || activeType;
+
+      const rawSel = document.getElementById("body-raw-format-select");
+      if (rawSel) {
+        rawSel.style.display = activeType === 'raw' ? 'inline-block' : 'none';
+        rawSel.value = bodyConfig.rawFormat || 'text/plain';
+      }
+
+      const rawSubtypeBadge = document.getElementById("body-raw-subtype-badge");
+      if (rawSubtypeBadge) rawSubtypeBadge.textContent = bodyConfig.rawFormat || 'text/plain';
+
+      const ctPill = document.getElementById("body-content-type-pill");
+      const isGetOrHead = op && ['get', 'head'].includes(op.method);
+      const derivedCt = getDerivedBodyContentType(op);
+      if (ctPill) {
+        if (isGetOrHead || !derivedCt) {
+          ctPill.textContent = 'No Content-Type';
+          ctPill.className = 'pill pill-planned';
+        } else if (activeType === 'formdata') {
+          ctPill.textContent = 'Content-Type: multipart/form-data (auto boundary)';
+          ctPill.className = 'pill pill-pass';
+        } else {
+          ctPill.textContent = `Content-Type: ${derivedCt}`;
+          ctPill.className = 'pill pill-pass';
+        }
+      }
+
+      const getWarn = document.getElementById("body-get-warning");
+      if (getWarn) {
+        getWarn.style.display = (isGetOrHead && activeType !== 'none') ? 'block' : 'none';
+      }
+
+      const jsonToolbar = document.getElementById("body-json-toolbar");
+      const rawToolbar = document.getElementById("body-raw-toolbar");
+      const nonePanel = document.getElementById("body-none-panel");
+      const textPanel = document.getElementById("body-text-editor-panel");
+      const fdPanel = document.getElementById("body-formdata-panel");
+      const uePanel = document.getElementById("body-urlencoded-panel");
+
+      if (jsonToolbar) jsonToolbar.style.display = activeType === 'json' ? 'flex' : 'none';
+      if (rawToolbar) rawToolbar.style.display = activeType === 'raw' ? 'flex' : 'none';
+      if (nonePanel) nonePanel.style.display = activeType === 'none' ? 'flex' : 'none';
+      if (textPanel) textPanel.style.display = (activeType === 'json' || activeType === 'raw') ? 'flex' : 'none';
+      if (fdPanel) fdPanel.style.display = activeType === 'formdata' ? 'flex' : 'none';
+      if (uePanel) uePanel.style.display = activeType === 'urlencoded' ? 'flex' : 'none';
+
+      const textarea = document.getElementById("request-body-input");
+      if (textarea) {
+        if (activeType === 'json') {
+          textarea.value = bodyConfig.jsonText || '';
+          textarea.placeholder = '{\n  // You can comment out lines with //:\n  "username": "alice"\n}';
+          updateBodyLineNumbers();
+        } else if (activeType === 'raw') {
+          textarea.value = bodyConfig.rawText || '';
+          const fmtInfo = RAW_FORMATS[bodyConfig.rawFormat] || RAW_FORMATS['text/plain'];
+          textarea.placeholder = fmtInfo.placeholder;
+          updateBodyLineNumbers();
+        }
+      }
+
+      if (activeType === 'formdata') {
+        renderFormDataTable();
+      } else if (activeType === 'urlencoded') {
+        renderUrlEncodedTable();
+      }
+    }
+
     function setupRequestBodyEditor() {
       const textarea = document.getElementById("request-body-input");
       const lineNums = document.getElementById("body-line-numbers");
@@ -3940,18 +4635,21 @@
         lineNums.scrollTop = textarea.scrollTop;
       });
 
-      // Update line numbers and code snippets on typing
+      // Update body cache, line numbers, and code snippets on typing
       textarea.addEventListener("input", () => {
+        syncActiveTextEditorToBodyConfig();
         updateBodyLineNumbers();
         updateCodeSnippet();
       });
 
-      // Handle Tab (2-space indent/outdent) and Ctrl+/ (comment toggle)
+      // Handle Tab (2-space indent/outdent) and Ctrl+/ (comment toggle in JSON mode)
       textarea.addEventListener("keydown", (e) => {
-        // Ctrl + / or Cmd + / -> Toggle line comment
+        // Ctrl + / or Cmd + / -> Toggle line comment (JSONC only)
         if ((e.ctrlKey || e.metaKey) && (e.key === "/" || e.key === "?")) {
-          e.preventDefault();
-          toggleCommentSelection();
+          if (bodyConfig.type === 'json') {
+            e.preventDefault();
+            toggleCommentSelection();
+          }
           return;
         }
 
@@ -3974,6 +4672,7 @@
               textarea.selectionStart = textarea.selectionEnd = Math.max(lineStart, start - 2);
             }
           }
+          syncActiveTextEditorToBodyConfig();
           updateBodyLineNumbers();
           updateCodeSnippet();
         }
@@ -4011,12 +4710,14 @@
     }
 
     function formatRequestBody() {
+      if (bodyConfig.type !== 'json') return;
       const box = document.getElementById("request-body-input");
       if (!box || !box.value.trim()) return;
       try {
         const cleaned = stripJsonComments(box.value);
         const parsed = JSON.parse(cleaned);
         box.value = JSON.stringify(parsed, null, 2);
+        syncActiveTextEditorToBodyConfig();
         updateBodyLineNumbers();
         updateCodeSnippet();
       } catch (e) {
@@ -4027,9 +4728,11 @@
     function resetRequestBody() {
       const op = operations[selectedOpIndex];
       const baseline = generateMockFromOp(op);
+      const formatted = JSON.stringify(baseline, null, 2);
+      bodyConfig.jsonText = formatted;
       const box = document.getElementById("request-body-input");
-      if (box) {
-        box.value = JSON.stringify(baseline, null, 2);
+      if (box && bodyConfig.type === 'json') {
+        box.value = formatted;
         updateBodyLineNumbers();
       }
       updateCodeSnippet();
@@ -4068,9 +4771,35 @@
     }
 
     function generateMockFromOp(op) {
-      const schema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      const schema = getOpJsonSchema(op);
       if (!schema) return { message: "sample_payload" };
       return generateMockFromSchema(schema);
+    }
+
+    function extractSchemaFormRows(op, mediaType, defaultRowType = 'file') {
+      const rawSchema = op?.raw?.requestBody?.content?.[mediaType]?.schema;
+      if (!rawSchema) return [];
+      const schema = resolveRef(rawSchema);
+      if (!schema || !schema.properties) return [];
+
+      return Object.entries(schema.properties).map(([key, rawProp]) => {
+        const prop = resolveRef(rawProp);
+        const isBinary = prop?.format === 'binary' || prop?.format === 'byte' || Boolean(prop?.contentMediaType);
+        if (mediaType === 'multipart/form-data') {
+          return {
+            enabled: true,
+            key,
+            rowType: isBinary ? 'file' : (defaultRowType || 'file'),
+            value: isBinary ? '' : String(prop?.example ?? prop?.default ?? ''),
+            file: null
+          };
+        }
+        return {
+          enabled: true,
+          key,
+          value: String(prop?.example ?? prop?.default ?? '')
+        };
+      });
     }
 
     function generateMockFromSchema(schema) {
@@ -5290,7 +6019,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       const op = operations[selectedOpIndex];
       if (!op) return;
 
-      const rawSchema = op.raw?.requestBody?.content?.['application/json']?.schema;
+      const rawSchema = getOpJsonSchema(op);
       if (!rawSchema) {
         alert("This endpoint does not define a JSON request body schema.");
         return;
@@ -5388,6 +6117,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         // Safely write to DOM textarea ONLY - Zero filesystem or OS access
         if (box) {
           box.value = JSON.stringify(payload, null, 2);
+          syncActiveTextEditorToBodyConfig();
           updateBodyLineNumbers();
           updateCodeSnippet();
         }
@@ -5406,6 +6136,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
         } catch {}
         if (box) {
           box.value = JSON.stringify(fallback, null, 2);
+          syncActiveTextEditorToBodyConfig();
           updateBodyLineNumbers();
           updateCodeSnippet();
         }
@@ -5421,30 +6152,101 @@ Synthesize a single realistic JSON request body adhering to this schema with div
       }
     }
 
+    function buildManualRequestBody(op, { validateJson = true } = {}) {
+      syncActiveTextEditorToBodyConfig();
+      if (!op || ['get', 'head'].includes(op.method) || bodyConfig.type === 'none') {
+        return { kind: 'none', hasBody: false, body: undefined };
+      }
+
+      if (bodyConfig.type === 'json') {
+        const rawText = bodyConfig.jsonText ?? document.getElementById("request-body-input")?.value ?? '';
+        const cleaned = stripJsonComments(rawText).trim();
+        const resolved = resolveEnvVars(cleaned);
+        if (!resolved.trim()) {
+          return { kind: 'json', hasBody: false, body: undefined, rawText: '' };
+        }
+        if (validateJson) {
+          const parsed = JSON.parse(resolved);
+          return { kind: 'json', hasBody: true, body: JSON.stringify(parsed), rawText: resolved, parsed };
+        }
+        try {
+          const parsed = JSON.parse(resolved);
+          return { kind: 'json', hasBody: true, body: JSON.stringify(parsed), rawText: resolved, parsed };
+        } catch {
+          return { kind: 'json', hasBody: true, body: resolved, rawText: resolved, parsed: null };
+        }
+      }
+
+      if (bodyConfig.type === 'raw') {
+        const rawText = bodyConfig.rawText ?? document.getElementById("request-body-input")?.value ?? '';
+        const resolved = resolveEnvVars(rawText);
+        return { kind: 'raw', hasBody: resolved.length > 0, body: resolved.length > 0 ? resolved : undefined, rawText: resolved };
+      }
+
+      if (bodyConfig.type === 'formdata') {
+        const activeRows = (bodyConfig.formDataRows || []).filter(r => r && r.enabled !== false && r.key && r.key.trim());
+        const formData = new FormData();
+        const entries = [];
+        let totalFileBytes = 0;
+
+        for (const r of activeRows) {
+          const k = resolveEnvVars(r.key.trim());
+          if (r.rowType !== 'text') {
+            const hasFile = Boolean(r.file);
+            if (hasFile) {
+              totalFileBytes += r.file.size;
+              formData.append(k, r.file);
+            }
+            entries.push({ key: k, rowType: 'file', fileName: hasFile ? r.file.name : null, hasFile, fileSize: hasFile ? r.file.size : 0 });
+          } else {
+            const v = resolveEnvVars(r.value || '');
+            formData.append(k, v);
+            entries.push({ key: k, rowType: 'text', value: v });
+          }
+        }
+        const hasBody = entries.some(e => e.rowType === 'text' || e.hasFile);
+        return { kind: 'formdata', hasBody, body: hasBody ? formData : undefined, entries, totalFileBytes };
+      }
+
+      if (bodyConfig.type === 'urlencoded') {
+        const activeRows = (bodyConfig.urlencodedRows || []).filter(r => r && r.enabled !== false && r.key && r.key.trim());
+        const params = new URLSearchParams();
+        const entries = [];
+        for (const r of activeRows) {
+          const k = resolveEnvVars(r.key.trim());
+          const v = resolveEnvVars(r.value || '');
+          params.append(k, v);
+          entries.push([k, v]);
+        }
+        return { kind: 'urlencoded', hasBody: entries.length > 0, body: entries.length > 0 ? params.toString() : undefined, entries };
+      }
+
+      return { kind: 'none', hasBody: false, body: undefined };
+    }
+
     async function executeManualRequest() {
       const op = operations[selectedOpIndex];
+      if (!op) return;
       const resolvedPath = getResolvedUrl();
-      const bodyText = document.getElementById("request-body-input").value;
       const statusBadge = document.getElementById("response-status-badge");
       const viewer = document.getElementById("response-viewer");
       const headersViewer = document.getElementById("response-headers-viewer");
       const latencyLabel = document.getElementById("response-latency");
 
-      // Build Headers Dictionary with Global Headers + Local Overrides + Env Var interpolation
-      const headersObj = getEffectiveHeadersForOp(op, requestHeaders);
+      // Build Headers Dictionary with Global Headers + Local Overrides + Auto Body Content-Type
+      const headersObj = getEffectiveManualRequestHeaders(op, { forFetch: true });
 
-      let payload = null;
-      if (['post', 'put', 'patch', 'delete'].includes(op.method) && bodyText.trim()) {
-        try {
-          const cleaned = stripJsonComments(bodyText);
-          const resolvedBody = resolveEnvVars(cleaned);
-          if (resolvedBody.trim()) {
-            payload = JSON.parse(resolvedBody);
-          }
-        } catch(e) {
-          alert("Invalid JSON body:\n" + e.message);
-          return;
-        }
+      let bodySpec;
+      try {
+        bodySpec = buildManualRequestBody(op, { validateJson: true });
+      } catch (e) {
+        alert("Invalid JSON body:\n" + e.message);
+        return;
+      }
+
+      if (bodySpec.kind === 'formdata' && bodySpec.totalFileBytes > MAX_PROXY_BODY_BYTES) {
+        alert(`Selected file(s) total ${formatFileSize(bodySpec.totalFileBytes)}, exceeding the 10 MiB SpecForge proxy body limit.`);
+        return;
       }
 
       const startTime = performance.now();
@@ -5453,7 +6255,9 @@ Synthesize a single realistic JSON request body adhering to this schema with div
           method: op.method.toUpperCase(),
           headers: headersObj
         };
-        if (payload !== null && payload !== undefined) opts.body = JSON.stringify(payload);
+        if (bodySpec.hasBody && bodySpec.body !== undefined) {
+          opts.body = bodySpec.body;
+        }
 
         const res = await fetch(resolvedPath, opts);
         const elapsed = Math.round(performance.now() - startTime);
@@ -7857,6 +8661,57 @@ Synthesize a single JSON object with these exact keys:
       alert("Pytest code copied to clipboard!");
     }
 
+    function formatPythonBodySnippet(lib, method, fullUrl, effectiveHeaders, bodySpec) {
+      let code = `import ${lib}\n\n`;
+      if (Object.keys(effectiveHeaders).length > 0) {
+        code += `headers = ${JSON.stringify(effectiveHeaders, null, 4)}\n`;
+      }
+
+      const indent = lib === 'httpx' ? '        ' : '    ';
+      const args = [`${indent}"${fullUrl}",`];
+      if (Object.keys(effectiveHeaders).length > 0) args.push(`${indent}headers=headers,`);
+
+      if (bodySpec.kind === 'json' && bodySpec.hasBody) {
+        args.push(`${indent}json=${bodySpec.rawText},`);
+      } else if (bodySpec.kind === 'raw' && bodySpec.hasBody) {
+        const paramName = lib === 'httpx' ? 'content' : 'data';
+        args.push(`${indent}${paramName}=${JSON.stringify(bodySpec.rawText)},`);
+      } else if (bodySpec.kind === 'formdata' && bodySpec.entries.length > 0) {
+        const textData = {};
+        const fileParts = [];
+        bodySpec.entries.forEach(e => {
+          if (e.rowType === 'file') {
+            const fname = JSON.stringify(e.fileName || 'file.bin');
+            fileParts.push(`${JSON.stringify(e.key)}: (${fname}, open(${fname}, "rb"))`);
+          } else {
+            textData[e.key] = e.value;
+          }
+        });
+        if (Object.keys(textData).length > 0) {
+          code += `data = ${JSON.stringify(textData, null, 4)}\n`;
+          args.push(`${indent}data=data,`);
+        }
+        if (fileParts.length > 0) {
+          code += `files = {\n    ${fileParts.join(',\n    ')}\n}\n`;
+          args.push(`${indent}files=files,`);
+        }
+      } else if (bodySpec.kind === 'urlencoded' && bodySpec.entries.length > 0) {
+        const formDict = {};
+        bodySpec.entries.forEach(([k, v]) => { formDict[k] = v; });
+        code += `data = ${JSON.stringify(formDict, null, 4)}\n`;
+        args.push(`${indent}data=data,`);
+      }
+
+      if (lib === 'httpx') {
+        code += `with httpx.Client() as client:\n`;
+        code += `    response = client.${method}(\n${args.join('\n')}\n    )\n`;
+      } else {
+        code += `response = requests.${method}(\n${args.join('\n')}\n)\n`;
+      }
+      code += `print(response.status_code, response.text)`;
+      return code;
+    }
+
     function updateCodeSnippet() {
       const op = operations[selectedOpIndex];
       if (!op) return;
@@ -7865,45 +8720,37 @@ Synthesize a single JSON object with these exact keys:
       const resolvedPath = getResolvedUrl();
       const fullUrl = `${host}${resolvedPath}`;
 
-      const effectiveHeaders = getEffectiveHeadersForOp(op, requestHeaders);
-      const activeQueries = queryParams.filter(q => q.enabled && q.key.trim());
-      const rawBody = document.getElementById("request-body-input").value;
-      const cleanedBody = stripJsonComments(rawBody).trim();
-      const bodyText = resolveEnvVars(cleanedBody);
-      const hasBody = ['post', 'put', 'patch', 'delete'].includes(op.method) && bodyText.length > 0;
+      const effectiveHeaders = getEffectiveManualRequestHeaders(op, { forFetch: false });
+      const bodySpec = buildManualRequestBody(op, { validateJson: false });
 
       let snippet = "";
       if (snippetLang === 'curl') {
         const parts = [`curl -X ${op.method.toUpperCase()} '${fullUrl}'`];
         Object.entries(effectiveHeaders).forEach(([k, v]) => {
-          parts.push(`  -H '${k}: ${v.replace(/'/g, "'\\''")}'`);
+          parts.push(`  -H '${k}: ${String(v).replace(/'/g, "'\\''")}'`);
         });
-        if (hasBody) {
-          parts.push(`  -d '${bodyText.replace(/'/g, "'\\''")}'`);
+        if (bodySpec.kind === 'json' || bodySpec.kind === 'raw') {
+          if (bodySpec.hasBody) {
+            parts.push(`  -d '${bodySpec.rawText.replace(/'/g, "'\\''")}'`);
+          }
+        } else if (bodySpec.kind === 'formdata') {
+          bodySpec.entries.forEach(e => {
+            const kEsc = e.key.replace(/'/g, "'\\''");
+            if (e.rowType === 'file') {
+              const fEsc = (e.fileName || '<file>').replace(/'/g, "'\\''");
+              parts.push(`  -F '${kEsc}=@${fEsc}'`);
+            } else {
+              parts.push(`  -F '${kEsc}=${(e.value || '').replace(/'/g, "'\\''")}'`);
+            }
+          });
+        } else if (bodySpec.kind === 'urlencoded') {
+          bodySpec.entries.forEach(([k, v]) => {
+            parts.push(`  --data-urlencode '${k.replace(/'/g, "'\\''")}=${v.replace(/'/g, "'\\''")}'`);
+          });
         }
         snippet = parts.join(" \\\n");
-      } else if (snippetLang === 'httpx') {
-        const paramDict = {};
-        activeQueries.forEach(q => { paramDict[resolveEnvVars(q.key.trim())] = resolveEnvVars(q.value); });
-
-        snippet = `import httpx\n\n`;
-        if (Object.keys(effectiveHeaders).length > 0) {
-          snippet += `headers = ${JSON.stringify(effectiveHeaders, null, 4)}\n`;
-        }
-        snippet += `with httpx.Client() as client:\n`;
-        snippet += `    response = client.${op.method}(\n        "${fullUrl}",\n`;
-        if (Object.keys(effectiveHeaders).length > 0) snippet += `        headers=headers,\n`;
-        if (hasBody) snippet += `        json=${bodyText},\n`;
-        snippet += `    )\n    print(response.status_code, response.json())`;
-      } else if (snippetLang === 'requests') {
-        snippet = `import requests\n\n`;
-        if (Object.keys(effectiveHeaders).length > 0) {
-          snippet += `headers = ${JSON.stringify(effectiveHeaders, null, 4)}\n`;
-        }
-        snippet += `response = requests.${op.method}(\n    "${fullUrl}",\n`;
-        if (Object.keys(effectiveHeaders).length > 0) snippet += `    headers=headers,\n`;
-        if (hasBody) snippet += `    json=${bodyText},\n`;
-        snippet += `)\nprint(response.status_code, response.json())`;
+      } else if (snippetLang === 'httpx' || snippetLang === 'requests') {
+        snippet = formatPythonBodySnippet(snippetLang, op.method, fullUrl, effectiveHeaders, bodySpec);
       }
 
       const box = document.getElementById("code-snippet-box");
@@ -7950,6 +8797,8 @@ Synthesize a single JSON object with these exact keys:
         if (!newSpec || !newSpec.paths) return;
 
         activeSpec = newSpec;
+        routeBodyStateCache.clear();
+        activeBodyRouteKey = null;
         parseOperations();
         renderEndpointList();
         await synthesizeTestPlan();
