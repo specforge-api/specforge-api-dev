@@ -38,6 +38,8 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/specforge/api/plan", get(plan::get_test_plans))
         .route("/specforge/api/run-tests", post(run::run_all_tests))
         .route("/specforge/api/export", get(export::export_test_suite))
+        // Request Relay (enables non-browser-standard HTTP features like GET with JSON body)
+        .route("/specforge/api/relay", post(proxy::relay_request))
         // Dynamic Mock Server Routes
         .route("/mock", get(mock::handle_mock_root).post(mock::handle_mock_root))
         .route("/mock/*path", get(mock::handle_mock_request).post(mock::handle_mock_request))

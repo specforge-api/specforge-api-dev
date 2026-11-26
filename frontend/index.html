@@ -856,6 +856,10 @@
       color: var(--primary-foreground);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
     }
+    .body-type-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
     .body-empty-box {
       flex: 1;
       min-height: 220px;
@@ -1621,9 +1625,9 @@
                 </span>
               </div>
 
-              <!-- Warning banner when a non-empty body mode is chosen on GET/HEAD -->
-              <div id="body-get-warning" style="display: none; margin-bottom: 0.55rem; padding: 0.4rem 0.7rem; border-radius: calc(var(--radius) - 3px); border: 1px solid var(--warning); background: var(--warning-background); color: var(--warning); font-size: 0.75rem; font-weight: 500;">
-                ⚠️ HTTP GET/HEAD requests do not transmit a request body in browsers; body and Content-Type will be omitted when sending.
+              <!-- Warning banner when JSON body is chosen on GET -->
+              <div id="body-get-warning" style="display: none; margin-bottom: 0.55rem; padding: 0.45rem 0.75rem; border-radius: calc(var(--radius) - 3px); border: 1px solid var(--warning); background: var(--warning-background); color: var(--warning); font-size: 0.75rem; line-height: 1.4; font-weight: 500;">
+                ⚠️ <strong>Not Recommended (RFC 9110):</strong> Sending a JSON body in HTTP <code>GET</code> requests breaks caching/REST semantics and may be stripped or rejected by proxies, CDNs, or firewalls. Prefer query parameters or <code>POST</code> for complex filters &mdash; SpecForge relays this JSON body via its local Rust proxy so you can still test endpoints requiring it.
               </div>
 
               <!-- Contextual Toolbar: JSON -->
@@ -2983,8 +2987,15 @@
       });
     }
 
+    function isBodyTypeAllowedForOp(op, type) {
+      if (!op) return true;
+      if (op.method === 'head') return type === 'none';
+      if (op.method === 'get') return type === 'none' || type === 'json';
+      return true;
+    }
+
     function getDerivedBodyContentType(op = operations[selectedOpIndex]) {
-      if (!op || ['get', 'head'].includes(op.method)) return null;
+      if (!op || !isBodyTypeAllowedForOp(op, bodyConfig.type)) return null;
       switch (bodyConfig.type) {
         case 'json': return 'application/json';
         case 'raw': return bodyConfig.rawFormat || 'text/plain';
@@ -2999,7 +3010,7 @@
       const existingCtKey = Object.keys(headersObj).find(k => k.toLowerCase() === 'content-type');
       const derivedCt = getDerivedBodyContentType(op);
 
-      if (bodyConfig.type === 'formdata' && !['get', 'head'].includes(op?.method)) {
+      if (bodyConfig.type === 'formdata' && isBodyTypeAllowedForOp(op, 'formdata')) {
         // Browser FormData / cURL -F / httpx files= must generate their own multipart boundary
         if (forFetch) {
           if (existingCtKey && (!headersObj[existingCtKey].toLowerCase().includes('boundary='))) {
@@ -3960,6 +3971,7 @@
           ? 'multipart/form-data (boundary set automatically on send)'
           : derivedCt;
 
+        const isGetBodyWarn = op && op.method === 'get' && bodyConfig.type === 'json';
         autoTr.innerHTML = `
           <td style="text-align: center; vertical-align: middle;">
             <span title="Automatically managed by the Body Type selector" style="font-size: 0.78rem; color: #10B981;">⚙️</span>
@@ -3968,6 +3980,7 @@
             <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
               <span style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; color: var(--foreground);">Content-Type</span>
               <span class="pill" style="font-size: 0.62rem; padding: 0.05rem 0.35rem; background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25);">📦 Auto from Body</span>
+              ${isGetBodyWarn ? '<span class="pill pill-leak" style="font-size: 0.62rem; padding: 0.05rem 0.35rem;" title="HTTP GET with a request body is non-standard (RFC 9110)">⚠️ GET Body (Not Best Practice)</span>' : ''}
               ${isCtOverridden ? '<span class="pill" style="font-size: 0.62rem; padding: 0.05rem 0.35rem; background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25);" title="Overridden by an explicit Content-Type header">⚡ Overridden</span>' : ''}
             </div>
           </td>
@@ -4284,7 +4297,9 @@
     }
 
     function setBodyType(nextType) {
+      const op = operations[selectedOpIndex];
       if (!BODY_TYPES.includes(nextType)) nextType = 'none';
+      if (!isBodyTypeAllowedForOp(op, nextType)) return;
       syncActiveTextEditorToBodyConfig();
       bodyConfig.type = nextType;
       if (activeBodyRouteKey) {
@@ -4550,11 +4565,27 @@
 
     function renderBodyTypeUI() {
       const op = operations[selectedOpIndex];
-      const activeType = BODY_TYPES.includes(bodyConfig.type) ? bodyConfig.type : 'none';
+      let activeType = BODY_TYPES.includes(bodyConfig.type) ? bodyConfig.type : 'none';
+      if (!isBodyTypeAllowedForOp(op, activeType)) {
+        activeType = 'none';
+        bodyConfig.type = 'none';
+      }
 
       BODY_TYPES.forEach(t => {
         const btn = document.getElementById(`body-type-btn-${t}`);
-        if (btn) btn.classList.toggle("active", t === activeType);
+        if (!btn) return;
+        const allowed = isBodyTypeAllowedForOp(op, t);
+        btn.disabled = !allowed;
+        btn.classList.toggle("active", t === activeType);
+        if (!allowed) {
+          btn.title = op?.method === 'get'
+            ? "GET requests only allow 'none' or 'JSON' (non-standard filter body)."
+            : "HEAD requests cannot send a body.";
+        } else {
+          btn.title = (op?.method === 'get' && t === 'json')
+            ? "Non-standard RFC 9110: Send JSON filter body on GET via local Rust proxy"
+            : "";
+        }
       });
 
       const tabBadge = document.getElementById("body-type-badge");
@@ -4570,12 +4601,15 @@
       if (rawSubtypeBadge) rawSubtypeBadge.textContent = bodyConfig.rawFormat || 'text/plain';
 
       const ctPill = document.getElementById("body-content-type-pill");
-      const isGetOrHead = op && ['get', 'head'].includes(op.method);
+      const isGetJson = op && op.method === 'get' && activeType === 'json';
       const derivedCt = getDerivedBodyContentType(op);
       if (ctPill) {
-        if (isGetOrHead || !derivedCt) {
+        if (!derivedCt) {
           ctPill.textContent = 'No Content-Type';
           ctPill.className = 'pill pill-planned';
+        } else if (isGetJson) {
+          ctPill.textContent = 'Content-Type: application/json (GET non-standard)';
+          ctPill.className = 'pill pill-leak';
         } else if (activeType === 'formdata') {
           ctPill.textContent = 'Content-Type: multipart/form-data (auto boundary)';
           ctPill.className = 'pill pill-pass';
@@ -4587,7 +4621,7 @@
 
       const getWarn = document.getElementById("body-get-warning");
       if (getWarn) {
-        getWarn.style.display = (isGetOrHead && activeType !== 'none') ? 'block' : 'none';
+        getWarn.style.display = isGetJson ? 'block' : 'none';
       }
 
       const jsonToolbar = document.getElementById("body-json-toolbar");
@@ -4608,7 +4642,9 @@
       if (textarea) {
         if (activeType === 'json') {
           textarea.value = bodyConfig.jsonText || '';
-          textarea.placeholder = '{\n  // You can comment out lines with //:\n  "username": "alice"\n}';
+          textarea.placeholder = isGetJson
+            ? '{\n  // Optional JSON filter body for GET (non-standard RFC 9110):\n  "role": "admin"\n}'
+            : '{\n  // You can comment out lines with //:\n  "username": "alice"\n}';
           updateBodyLineNumbers();
         } else if (activeType === 'raw') {
           textarea.value = bodyConfig.rawText || '';
@@ -4772,7 +4808,7 @@
 
     function generateMockFromOp(op) {
       const schema = getOpJsonSchema(op);
-      if (!schema) return { message: "sample_payload" };
+      if (!schema) return op?.method === 'get' ? { filter: "value" } : { message: "sample_payload" };
       return generateMockFromSchema(schema);
     }
 
@@ -6154,7 +6190,7 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
     function buildManualRequestBody(op, { validateJson = true } = {}) {
       syncActiveTextEditorToBodyConfig();
-      if (!op || ['get', 'head'].includes(op.method) || bodyConfig.type === 'none') {
+      if (!op || !isBodyTypeAllowedForOp(op, bodyConfig.type) || bodyConfig.type === 'none') {
         return { kind: 'none', hasBody: false, body: undefined };
       }
 
@@ -6251,15 +6287,29 @@ Synthesize a single realistic JSON request body adhering to this schema with div
 
       const startTime = performance.now();
       try {
-        const opts = {
-          method: op.method.toUpperCase(),
-          headers: headersObj
-        };
-        if (bodySpec.hasBody && bodySpec.body !== undefined) {
-          opts.body = bodySpec.body;
+        let res;
+        if (op.method === 'get' && bodySpec.hasBody && bodySpec.body !== undefined) {
+          // Browsers reject fetch() requests with a GET body per WHATWG Fetch spec; relay through local Rust proxy
+          res = await fetch('/specforge/api/relay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              method: 'GET',
+              path: resolvedPath,
+              headers: headersObj,
+              body: typeof bodySpec.body === 'string' ? bodySpec.body : JSON.stringify(bodySpec.body)
+            })
+          });
+        } else {
+          const opts = {
+            method: op.method.toUpperCase(),
+            headers: headersObj
+          };
+          if (bodySpec.hasBody && bodySpec.body !== undefined) {
+            opts.body = bodySpec.body;
+          }
+          res = await fetch(resolvedPath, opts);
         }
-
-        const res = await fetch(resolvedPath, opts);
         const elapsed = Math.round(performance.now() - startTime);
         const text = await res.text();
 
@@ -8661,30 +8711,53 @@ Synthesize a single JSON object with these exact keys:
       alert("Pytest code copied to clipboard!");
     }
 
+    function setPlainDictProp(target, key, val) {
+      Object.defineProperty(target, key, {
+        value: val,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+    }
+
+    function escShellSingleQuote(val) {
+      return String(val ?? '').replace(/'/g, "'\\''");
+    }
+
     function formatPythonBodySnippet(lib, method, fullUrl, effectiveHeaders, bodySpec) {
-      let code = `import ${lib}\n\n`;
+      const isGetWithBody = method === 'get' && bodySpec.hasBody;
+      let code = isGetWithBody
+        ? `# Warning: HTTP GET with a request body is non-standard (RFC 9110)\nimport ${lib}\n\n`
+        : `import ${lib}\n\n`;
       if (Object.keys(effectiveHeaders).length > 0) {
         code += `headers = ${JSON.stringify(effectiveHeaders, null, 4)}\n`;
       }
 
       const indent = lib === 'httpx' ? '        ' : '    ';
-      const args = [`${indent}"${fullUrl}",`];
+      const args = isGetWithBody
+        ? [`${indent}"GET",`, `${indent}${JSON.stringify(fullUrl)},`]
+        : [`${indent}${JSON.stringify(fullUrl)},`];
       if (Object.keys(effectiveHeaders).length > 0) args.push(`${indent}headers=headers,`);
 
       if (bodySpec.kind === 'json' && bodySpec.hasBody) {
-        args.push(`${indent}json=${bodySpec.rawText},`);
+        if (bodySpec.parsed !== null && bodySpec.parsed !== undefined) {
+          args.push(`${indent}json=${bodySpec.rawText},`);
+        } else {
+          const paramName = lib === 'httpx' ? 'content' : 'data';
+          args.push(`${indent}${paramName}=${JSON.stringify(bodySpec.rawText)},`);
+        }
       } else if (bodySpec.kind === 'raw' && bodySpec.hasBody) {
         const paramName = lib === 'httpx' ? 'content' : 'data';
         args.push(`${indent}${paramName}=${JSON.stringify(bodySpec.rawText)},`);
       } else if (bodySpec.kind === 'formdata' && bodySpec.entries.length > 0) {
-        const textData = {};
+        const textData = Object.create(null);
         const fileParts = [];
         bodySpec.entries.forEach(e => {
           if (e.rowType === 'file') {
             const fname = JSON.stringify(e.fileName || 'file.bin');
             fileParts.push(`${JSON.stringify(e.key)}: (${fname}, open(${fname}, "rb"))`);
           } else {
-            textData[e.key] = e.value;
+            setPlainDictProp(textData, e.key, e.value);
           }
         });
         if (Object.keys(textData).length > 0) {
@@ -8696,17 +8769,19 @@ Synthesize a single JSON object with these exact keys:
           args.push(`${indent}files=files,`);
         }
       } else if (bodySpec.kind === 'urlencoded' && bodySpec.entries.length > 0) {
-        const formDict = {};
-        bodySpec.entries.forEach(([k, v]) => { formDict[k] = v; });
+        const formDict = Object.create(null);
+        bodySpec.entries.forEach(([k, v]) => setPlainDictProp(formDict, k, v));
         code += `data = ${JSON.stringify(formDict, null, 4)}\n`;
         args.push(`${indent}data=data,`);
       }
 
       if (lib === 'httpx') {
         code += `with httpx.Client() as client:\n`;
-        code += `    response = client.${method}(\n${args.join('\n')}\n    )\n`;
+        const callName = isGetWithBody ? 'client.request' : `client.${method}`;
+        code += `    response = ${callName}(\n${args.join('\n')}\n    )\n`;
       } else {
-        code += `response = requests.${method}(\n${args.join('\n')}\n)\n`;
+        const callName = isGetWithBody ? 'requests.request' : `requests.${method}`;
+        code += `response = ${callName}(\n${args.join('\n')}\n)\n`;
       }
       code += `print(response.status_code, response.text)`;
       return code;
@@ -8725,30 +8800,32 @@ Synthesize a single JSON object with these exact keys:
 
       let snippet = "";
       if (snippetLang === 'curl') {
-        const parts = [`curl -X ${op.method.toUpperCase()} '${fullUrl}'`];
+        const parts = [`curl -X ${op.method.toUpperCase()} '${escShellSingleQuote(fullUrl)}'`];
         Object.entries(effectiveHeaders).forEach(([k, v]) => {
-          parts.push(`  -H '${k}: ${String(v).replace(/'/g, "'\\''")}'`);
+          parts.push(`  -H '${escShellSingleQuote(k)}: ${escShellSingleQuote(v)}'`);
         });
         if (bodySpec.kind === 'json' || bodySpec.kind === 'raw') {
           if (bodySpec.hasBody) {
-            parts.push(`  -d '${bodySpec.rawText.replace(/'/g, "'\\''")}'`);
+            parts.push(`  -d '${escShellSingleQuote(bodySpec.rawText)}'`);
           }
         } else if (bodySpec.kind === 'formdata') {
           bodySpec.entries.forEach(e => {
-            const kEsc = e.key.replace(/'/g, "'\\''");
+            const kEsc = escShellSingleQuote(e.key);
             if (e.rowType === 'file') {
-              const fEsc = (e.fileName || '<file>').replace(/'/g, "'\\''");
+              const fEsc = escShellSingleQuote(e.fileName || '<file>');
               parts.push(`  -F '${kEsc}=@${fEsc}'`);
             } else {
-              parts.push(`  -F '${kEsc}=${(e.value || '').replace(/'/g, "'\\''")}'`);
+              parts.push(`  --form-string '${kEsc}=${escShellSingleQuote(e.value || '')}'`);
             }
           });
         } else if (bodySpec.kind === 'urlencoded') {
           bodySpec.entries.forEach(([k, v]) => {
-            parts.push(`  --data-urlencode '${k.replace(/'/g, "'\\''")}=${v.replace(/'/g, "'\\''")}'`);
+            parts.push(`  --data-urlencode '${escShellSingleQuote(k)}=${escShellSingleQuote(v)}'`);
           });
         }
-        snippet = parts.join(" \\\n");
+        snippet = (op.method === 'get' && bodySpec.hasBody)
+          ? `# Warning: HTTP GET with a request body is non-standard (RFC 9110)\n${parts.join(" \\\n")}`
+          : parts.join(" \\\n");
       } else if (snippetLang === 'httpx' || snippetLang === 'requests') {
         snippet = formatPythonBodySnippet(snippetLang, op.method, fullUrl, effectiveHeaders, bodySpec);
       }
